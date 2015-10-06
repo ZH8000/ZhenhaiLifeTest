@@ -2,19 +2,9 @@ package tw.com.zhenhai.lifetest;
 
 import org.eclipse.swt._
 import org.eclipse.swt.widgets._
+import org.eclipse.swt.layout._
+import org.eclipse.swt.events._
 
 object MainWindow {
-  def main(args: Array[String]) {
-    val display = new Display
-    val shell = new Shell(display)
-
-    shell.open()
-    
-    while (!shell.isDisposed()) {
-      if (!display.readAndDispatch()) {
-        display.sleep()
-      }
-    }
-    display.dispose()
-  }
+  def createWindow(shell: Shell) = new Shell(shell, SWT.TITLE|SWT.SYSTEM_MODAL|SWT.CLOSE|SWT.MAX|SWT.MIN)
 }
