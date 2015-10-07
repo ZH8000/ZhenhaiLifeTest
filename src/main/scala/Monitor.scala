@@ -45,6 +45,7 @@ class AreaInfo(parent: Shell, areaNumber: Int, hasInfo: Boolean) extends Composi
     areaInfoFillLayout.marginHeight = 10
 
     areaInfoGroup.setLayout(areaInfoFillLayout)
+
     if (hasInfo) {
       val label1 = new Label(areaInfoGroup, SWT.NONE)
       val label2 = new Label(areaInfoGroup, SWT.NONE)
@@ -55,6 +56,13 @@ class AreaInfo(parent: Shell, areaNumber: Int, hasInfo: Boolean) extends Composi
       label2.setText("Load: 10 / 10")
       label3.setText("Unload: 10 / 10")
       label4.setText("Duration: 2HR")
+    } else {
+      areaButton.addSelectionListener(new SelectionAdapter() {
+        override def widgetSelected(e: SelectionEvent) {
+          val addTestPlainWindow = AddTestPlain.createWindow(parent)
+          addTestPlainWindow.open()
+        }
+      })
     }
     
     areaInfoGroup
@@ -114,8 +122,7 @@ object MonitorWindow {
     } 
 
     areas.foreach(_.setLayoutData(createGridData))
-
-    shell.setMaximized(true)
+    shell.setSize(shell.getDisplay.getBounds.width, shell.getDisplay.getBounds.height)
     shell
   }
 }

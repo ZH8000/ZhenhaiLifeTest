@@ -63,7 +63,7 @@ object MainWindow {
 
     settingButton.setText("儀器設定")
     settingButton.setLayoutData(layoutData4)
-    shell.setMaximized(true)
+    shell.setSize(shell.getDisplay.getBounds.width, shell.getDisplay.getBounds.height)
     shell
   }
 }

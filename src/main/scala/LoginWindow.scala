@@ -77,7 +77,7 @@ object LoginWindow {
     gridData.grabExcessVerticalSpace = true
 
     loginFrame.setLayoutData(gridData)
-    shell.setMaximized(true)
+    shell.setSize(shell.getDisplay.getBounds.width, shell.getDisplay.getBounds.height)
     shell.open()
     
     while (!shell.isDisposed()) {
