@@ -30,6 +30,12 @@ object MainWindow {
 
     monitorButton.setText("即時監控")
     monitorButton.setLayoutData(layoutData1)
+    monitorButton.addSelectionListener(new SelectionAdapter() {
+      override def widgetSelected(evnet: SelectionEvent) {
+        val monitorWindow = MonitorWindow.createWindow(shell)
+        monitorWindow.open()
+      }
+    })
 
     val layoutData2 = new GridData
     layoutData2.horizontalAlignment = GridData.FILL
