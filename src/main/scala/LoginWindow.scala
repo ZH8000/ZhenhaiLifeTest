@@ -34,6 +34,7 @@ class LoginWindow(parent: Composite, style: Int) extends Composite(parent, style
     buttonLayoutData.horizontalAlignment = GridData.FILL;
     button.setLayoutData(buttonLayoutData)
     button.setText("登入")
+    this.getShell.setDefaultButton(button)
     button.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(evnet: SelectionEvent) {
         processLogin(usernameTextEntry.getText, passwordTextEntry.getText)
@@ -76,6 +77,7 @@ object LoginWindow {
     gridData.grabExcessVerticalSpace = true
 
     loginFrame.setLayoutData(gridData)
+    shell.setMaximized(true)
     shell.open()
     
     while (!shell.isDisposed()) {
