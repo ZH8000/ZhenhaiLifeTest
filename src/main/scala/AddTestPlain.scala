@@ -126,6 +126,12 @@ object AddTestPlain {
     okButtonLayoutData.widthHint = 150
     okButton.setLayoutData(okButtonLayoutData)
     okButton.setText("確定")
+    okButton.addSelectionListener(new SelectionAdapter() {
+      override def widgetSelected(e: SelectionEvent) {
+        val summaryWindow = OrderStatusSummary.createWindow(shell)
+        summaryWindow.open()
+      }
+    })
 
 
     okButton.setFocus()

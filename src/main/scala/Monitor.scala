@@ -56,6 +56,14 @@ class AreaInfo(parent: Shell, areaNumber: Int, hasInfo: Boolean) extends Composi
       label2.setText("Load: 10 / 10")
       label3.setText("Unload: 10 / 10")
       label4.setText("Duration: 2HR")
+
+      areaButton.addSelectionListener(new SelectionAdapter() {
+        override def widgetSelected(e: SelectionEvent) {
+          val summaryWindow = OrderStatusSummary.createWindow(parent)
+          summaryWindow.open()
+        }
+      })
+
     } else {
       areaButton.addSelectionListener(new SelectionAdapter() {
         override def widgetSelected(e: SelectionEvent) {
