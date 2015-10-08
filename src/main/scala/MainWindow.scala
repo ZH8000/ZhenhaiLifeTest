@@ -60,6 +60,13 @@ object MainWindow {
 
     queryButton.setText("單號查詢")
     queryButton.setLayoutData(layoutData3)
+    queryButton.addSelectionListener(new SelectionAdapter() {
+      override def widgetSelected(evnet: SelectionEvent) {
+        val queryWindow = OrderIDQuery.createWindow(shell)
+        queryWindow.open()
+      }
+     
+    })
 
     val layoutData4 = new GridData
     layoutData4.horizontalAlignment = GridData.FILL
