@@ -128,7 +128,8 @@ object AddTestPlain {
     okButton.setText("確定")
     okButton.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(e: SelectionEvent) {
-        val summaryWindow = OrderStatusSummary.createWindow(shell)
+        val summaryWindow = OrderStatusSummary.createWindow(parentShell)
+        shell.dispose()
         summaryWindow.open()
       }
     })

@@ -25,6 +25,12 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
       buttonLayoutData.grabExcessVerticalSpace = true
       button.setLayoutData(buttonLayoutData)
       button.setText(title)
+      button.addSelectionListener(new SelectionAdapter() {
+        override def widgetSelected(e: SelectionEvent) {
+          val detailWindow = OrderCapacityDetail.createWindow(parent.getShell)
+          detailWindow.open()
+        }
+      })
       button
     }
 
