@@ -45,6 +45,12 @@ object MainWindow {
 
     historyButton.setText("歷史資料")
     historyButton.setLayoutData(layoutData2)
+    historyButton.addSelectionListener(new SelectionAdapter() {
+      override def widgetSelected(evnet: SelectionEvent) {
+        val historyQueryWindow = HistoryQuery.createWindow(shell)
+        historyQueryWindow.open()
+      }
+    })
 
     val layoutData3 = new GridData
     layoutData3.horizontalAlignment = GridData.FILL
