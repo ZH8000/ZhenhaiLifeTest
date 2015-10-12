@@ -65,7 +65,6 @@ object MainWindow {
         val queryWindow = OrderIDQuery.createWindow(shell)
         queryWindow.open()
       }
-     
     })
 
     val layoutData4 = new GridData
@@ -76,6 +75,13 @@ object MainWindow {
 
     settingButton.setText("儀器設定")
     settingButton.setLayoutData(layoutData4)
+    settingButton.addSelectionListener(new SelectionAdapter() {
+      override def widgetSelected(evnet: SelectionEvent) {
+        val settingWindow = EditParameter.createWindow(shell)
+        settingWindow.open()
+      }
+    })
+
     shell.setSize(shell.getDisplay.getBounds.width, shell.getDisplay.getBounds.height)
     shell
   }
