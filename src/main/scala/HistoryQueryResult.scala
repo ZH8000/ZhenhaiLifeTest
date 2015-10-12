@@ -44,6 +44,9 @@ class HistoryQueryResult(mainWindowShell: Shell, title: String) extends Composit
     table.setLayoutData(tableLayoutData)
     table.addListener (SWT.DefaultSelection, new Listener () {
       override def handleEvent(event: Event) {
+        val selectedIndex = table.getSelectionIndex
+        val selectedItem = table.getItem(selectedIndex)
+        MainWindow.appendLog(s"點選 [$selectedIndex] => ${selectedItem.getText(0)} / ${selectedItem.getText(1)}")
         MainWindow.pushComposite(new OrderStatusSummary(MainWindow.mainWindowShell))
       }
     })

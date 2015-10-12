@@ -62,6 +62,7 @@ class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, S
   
         areaButton.addSelectionListener(new SelectionAdapter() {
           override def widgetSelected(e: SelectionEvent) {
+            MainWindow.appendLog(s"點選「${areaButton.getText}」")
             MainWindow.pushComposite(new OrderStatusSummary(mainWindowShell))
           }
         })
@@ -69,6 +70,7 @@ class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, S
       } else {
         areaButton.addSelectionListener(new SelectionAdapter() {
           override def widgetSelected(e: SelectionEvent) {
+            MainWindow.appendLog(s"點選「${areaButton.getText}」")
             MainWindow.pushComposite(new AddTestPlain(MainWindow.mainWindowShell))
           }
         })

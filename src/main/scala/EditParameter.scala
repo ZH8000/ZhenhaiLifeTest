@@ -50,35 +50,35 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
       gridData
     }
 
-    val orderLabel = new Label(group, SWT.RIGHT)
-    val orderTextEntry = new Text(group, SWT.BORDER)
-    orderLabel.setText("參數一：")
-    orderLabel.setLayoutData(createLabelLayoutData)
-    orderTextEntry.setLayoutData(createTextEntryLayoutData)
+    val parameter1Label = new Label(group, SWT.RIGHT)
+    val parameter1TextEntry = new Text(group, SWT.BORDER)
+    parameter1Label.setText("參數一：")
+    parameter1Label.setLayoutData(createLabelLayoutData)
+    parameter1TextEntry.setLayoutData(createTextEntryLayoutData)
 
-    val companyLabel = new Label(group, SWT.RIGHT)
-    val companyTextEntry = new Text(group, SWT.BORDER)
-    companyLabel.setText("參數二：")
-    companyLabel.setLayoutData(createLabelLayoutData)
-    companyTextEntry.setLayoutData(createTextEntryLayoutData)
+    val parameter2Label = new Label(group, SWT.RIGHT)
+    val parameter2TextEntry = new Text(group, SWT.BORDER)
+    parameter2Label.setText("參數二：")
+    parameter2Label.setLayoutData(createLabelLayoutData)
+    parameter2TextEntry.setLayoutData(createTextEntryLayoutData)
 
-    val faradLabel = new Label(group, SWT.RIGHT)
-    val faradTextEntry = new Text(group, SWT.BORDER)
-    faradLabel.setText("參數三：")
-    faradLabel.setLayoutData(createLabelLayoutData)
-    faradTextEntry.setLayoutData(createTextEntryLayoutData)
+    val parameter3Label = new Label(group, SWT.RIGHT)
+    val parameter3TextEntry = new Text(group, SWT.BORDER)
+    parameter3Label.setText("參數三：")
+    parameter3Label.setLayoutData(createLabelLayoutData)
+    parameter3TextEntry.setLayoutData(createTextEntryLayoutData)
 
-    val voltageLabel = new Label(group, SWT.RIGHT)
-    val voltageTextEntry = new Text(group, SWT.BORDER)
-    voltageLabel.setText("參數四：")
-    voltageLabel.setLayoutData(createLabelLayoutData)
-    voltageTextEntry.setLayoutData(createTextEntryLayoutData)
+    val parameter4Label = new Label(group, SWT.RIGHT)
+    val parameter4TextEntry = new Text(group, SWT.BORDER)
+    parameter4Label.setText("參數四：")
+    parameter4Label.setLayoutData(createLabelLayoutData)
+    parameter4TextEntry.setLayoutData(createTextEntryLayoutData)
 
-    val totalTimeLabel = new Label(group, SWT.RIGHT)
-    val totalTimeTextEntry = new Text(group, SWT.BORDER)
-    totalTimeLabel.setText("參數五：")
-    totalTimeLabel.setLayoutData(createLabelLayoutData)
-    totalTimeTextEntry.setLayoutData(createTextEntryLayoutData)
+    val parameter5Label = new Label(group, SWT.RIGHT)
+    val parameter5TextEntry = new Text(group, SWT.BORDER)
+    parameter5Label.setText("參數五：")
+    parameter5Label.setLayoutData(createLabelLayoutData)
+    parameter5TextEntry.setLayoutData(createTextEntryLayoutData)
 
     val okButton = new Button(this, SWT.PUSH)
     val okButtonLayoutData = new GridData
@@ -93,6 +93,12 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     okButton.setText("確定")
     okButton.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(e: SelectionEvent) {
+        MainWindow.appendLog("按下「確定」按鈕")
+        MainWindow.appendLog(s"  參數一：${parameter1TextEntry.getText}")
+        MainWindow.appendLog(s"  參數二：${parameter2TextEntry.getText}")
+        MainWindow.appendLog(s"  參數三：${parameter3TextEntry.getText}")
+        MainWindow.appendLog(s"  參數四：${parameter4TextEntry.getText}")
+        MainWindow.appendLog(s"  參數五：${parameter5TextEntry.getText}")
         MainWindow.popComposite()
       }
     })

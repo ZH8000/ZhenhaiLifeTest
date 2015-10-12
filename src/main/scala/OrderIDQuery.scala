@@ -50,6 +50,8 @@ class OrderIDQuery(mainWindowShell: Shell) extends Composite(mainWindowShell, SW
     searchButton.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(e: SelectionEvent) {
 
+        MainWindow.appendLog(s"查詢訂單編號：${textEntry.getText}")
+
         if (textEntry.getText.trim.size == 0) {
           val messageBox = new MessageBox(MainWindow.mainWindowShell, SWT.ICON_WARNING)
           messageBox.setText("查無此訂單")

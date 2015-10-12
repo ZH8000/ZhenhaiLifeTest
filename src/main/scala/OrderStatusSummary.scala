@@ -27,6 +27,7 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
       button.setText(title)
       button.addSelectionListener(new SelectionAdapter() {
         override def widgetSelected(e: SelectionEvent) {
+          MainWindow.appendLog(s"點選「${CapacityBlock.this.title}」中的「$title」按鈕")
           MainWindow.pushComposite(new OrderCapacityDetail(MainWindow.mainWindowShell))
         }
       })

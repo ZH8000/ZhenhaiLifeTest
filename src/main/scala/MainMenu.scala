@@ -31,9 +31,13 @@ class MainMenu(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NO
         val messageBox = new MessageBox(mainWindowShell, SWT.ICON_QUESTION|SWT.OK|SWT.CANCEL)
         messageBox.setText("登出嗎？")
         messageBox.setMessage("確定要登出嗎？")
+        MainWindow.appendLog("點選「登出」按鈕")
         val resultCode = messageBox.open()
         if (resultCode == SWT.OK) {
+          MainWindow.appendLog("點選「確定」按鈕")
           mainWindowShell.dispose()
+        } else {
+          MainWindow.appendLog("取消")
         }
       }
     })
@@ -54,8 +58,8 @@ class MainMenu(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NO
     monitorButton.setLayoutData(layoutData1)
     monitorButton.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(evnet: SelectionEvent) {
-        val monitorWindow = new MonitorWindow(mainWindowShell)
-        MainWindow.pushComposite(monitorWindow)
+        MainWindow.appendLog("點選「即時監控」")
+        MainWindow.pushComposite(new MonitorWindow(mainWindowShell))
       }
     })
 
@@ -69,6 +73,7 @@ class MainMenu(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NO
     historyButton.setLayoutData(layoutData2)
     historyButton.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(evnet: SelectionEvent) {
+        MainWindow.appendLog("點選「歷史資料」")
         MainWindow.pushComposite(new HistoryQuery(MainWindow.mainWindowShell))
       }
     })
@@ -83,6 +88,7 @@ class MainMenu(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NO
     queryButton.setLayoutData(layoutData3)
     queryButton.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(evnet: SelectionEvent) {
+        MainWindow.appendLog("點選「單號查詢」")
         MainWindow.pushComposite(new OrderIDQuery(mainWindowShell))
       }
     })
@@ -97,6 +103,7 @@ class MainMenu(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NO
     settingButton.setLayoutData(layoutData4)
     settingButton.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(evnet: SelectionEvent) {
+        MainWindow.appendLog("點選「儀器設定」")
         MainWindow.pushComposite(new EditParameter(MainWindow.mainWindowShell))
       }
     })

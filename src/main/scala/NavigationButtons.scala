@@ -18,6 +18,7 @@ class NavigationButtons(parent: Composite) extends Composite(parent, SWT.NONE) {
   homeButton.setText("主選單")
   homeButton.addSelectionListener(new SelectionAdapter() {
     override def widgetSelected(e: SelectionEvent) {
+      MainWindow.appendLog("點選「主選單」")
       MainWindow.popUntilLastComposite()
     }
   })
@@ -25,6 +26,7 @@ class NavigationButtons(parent: Composite) extends Composite(parent, SWT.NONE) {
   backButton.setText("上一頁")
   backButton.addSelectionListener(new SelectionAdapter() {
     override def widgetSelected(e: SelectionEvent) {
+      MainWindow.appendLog("點選「上一頁」")
       MainWindow.popComposite()
     }
   })

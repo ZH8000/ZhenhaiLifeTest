@@ -62,7 +62,6 @@ class AddTestPlain(mainWindowShell: Shell) extends Composite(mainWindowShell, SW
     companyLabel.setLayoutData(createLabelLayoutData)
     companyTextEntry.setLayoutData(createTextEntryLayoutData)
 
-
     val faradLabel = new Label(group, SWT.RIGHT)
     val faradTextEntry = new Text(group, SWT.BORDER)
     faradLabel.setText("電容值：")
@@ -110,7 +109,7 @@ class AddTestPlain(mainWindowShell: Shell) extends Composite(mainWindowShell, SW
 
     val dfLabel = new Label(group2, SWT.RIGHT)
     val dfTextEntry = new Text(group2, SWT.BORDER)
-    dfLabel.setText("漏電電流值：")
+    dfLabel.setText("df 值：")
     dfLabel.setLayoutData(createLabelLayoutData)
     dfTextEntry.setLayoutData(createTextEntryLayoutData)
 
@@ -127,6 +126,17 @@ class AddTestPlain(mainWindowShell: Shell) extends Composite(mainWindowShell, SW
     okButton.setText("確定")
     okButton.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(e: SelectionEvent) {
+        MainWindow.appendLog(s"按下「確定」按鈕")
+        MainWindow.appendLog(s"  單號：${orderTextEntry.getText}")
+        MainWindow.appendLog(s"  單號：${orderTextEntry.getText}")
+        MainWindow.appendLog(s"  廠旁：${companyTextEntry.getText}")
+        MainWindow.appendLog(s"  容量：${faradTextEntry.getText}")
+        MainWindow.appendLog(s"  電壓：${voltageTextEntry.getText}")
+        MainWindow.appendLog(s"  總時間：${totalTimeTextEntry.getText}")
+        MainWindow.appendLog(s"  間隔時間：${durationTextEntry.getText}")
+        MainWindow.appendLog(s"  誤差值：${marginOfErrorTextEntry.getText}")
+        MainWindow.appendLog(s"  漏電電流：${lostTextEntry.getText}")
+        MainWindow.appendLog(s"  df 值：${dfTextEntry.getText}")
         MainWindow.popComposite()
         MainWindow.pushComposite(new OrderStatusSummary(MainWindow.mainWindowShell))
       }
