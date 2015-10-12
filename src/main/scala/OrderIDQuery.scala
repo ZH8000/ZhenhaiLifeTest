@@ -5,13 +5,10 @@ import org.eclipse.swt.widgets._
 import org.eclipse.swt.layout._
 import org.eclipse.swt.events._
 
-object OrderIDQuery {
+class OrderIDQuery(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
-  
+  def init() {
 
-  def createWindow(parentShell: Shell) = {
-
-    val shell = new Shell(parentShell.getDisplay, SWT.SHELL_TRIM| SWT.APPLICATION_MODAL)
     val gridLayout = new GridLayout(1, true)
 
     gridLayout.horizontalSpacing = 20
@@ -19,9 +16,9 @@ object OrderIDQuery {
     gridLayout.marginWidth = 200
     gridLayout.marginHeight = 200
 
-    shell.setLayout(gridLayout)
+    this.setLayout(gridLayout)
 
-    val navigationButtons = new NavigationButtons(shell)
+    val navigationButtons = new NavigationButtons(this)
     val navigationButtonsLayoutData = new GridData
     navigationButtonsLayoutData.heightHint = 50
     navigationButtonsLayoutData.widthHint = 300
@@ -29,7 +26,7 @@ object OrderIDQuery {
     navigationButtonsLayoutData.grabExcessHorizontalSpace = true
     navigationButtons.setLayoutData(navigationButtonsLayoutData)
    
-    val composite = new Composite(shell, SWT.NONE)
+    val composite = new Composite(this, SWT.NONE)
     val compositeLayoutData = new GridData
     compositeLayoutData.widthHint = 300
     compositeLayoutData.horizontalAlignment = GridData.CENTER
@@ -54,20 +51,17 @@ object OrderIDQuery {
       override def widgetSelected(e: SelectionEvent) {
 
         if (textEntry.getText.trim.size == 0) {
-          val messageBox = new MessageBox(shell, SWT.ICON_WARNING)
+          val messageBox = new MessageBox(MainWindow.mainWindowShell, SWT.ICON_WARNING)
           messageBox.setText("查無此訂單")
           messageBox.setMessage("系統中無此訂單編號的資料，請確認後重新輸入查詢")
           messageBox.open()
         } else {
-          val orderSummary = OrderStatusSummary.createWindow(shell)
-          orderSummary.open()
+          MainWindow.pushComposite(new OrderStatusSummary(MainWindow.mainWindowShell))
         }
 
       }
     })
-
-    shell.setDefaultButton(searchButton)
-    shell.setMaximized(true)
-    shell
   }
+
+  init()
 }

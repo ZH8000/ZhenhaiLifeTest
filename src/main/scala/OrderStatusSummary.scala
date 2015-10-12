@@ -27,8 +27,7 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
       button.setText(title)
       button.addSelectionListener(new SelectionAdapter() {
         override def widgetSelected(e: SelectionEvent) {
-          val detailWindow = OrderCapacityDetail.createWindow(parent.getShell)
-          detailWindow.open()
+          MainWindow.pushComposite(new OrderCapacityDetail(MainWindow.mainWindowShell))
         }
       })
       button
@@ -94,11 +93,10 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
 
 }
 
-object OrderStatusSummary {
+class OrderStatusSummary(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
-  def createWindow(parentShell: Shell) = {
+  def init() {
 
-    val shell = new Shell(parentShell.getDisplay, SWT.SHELL_TRIM| SWT.APPLICATION_MODAL)
     val gridLayout = new GridLayout(3, true)
 
     gridLayout.horizontalSpacing = 20
@@ -106,18 +104,18 @@ object OrderStatusSummary {
     gridLayout.marginWidth = 200
     gridLayout.marginHeight = 200
 
-    shell.setLayout(gridLayout)
+    this.setLayout(gridLayout)
 
-    val title = new Label(shell, SWT.NONE)
+    val title = new Label(this, SWT.NONE)
     title.setText("訂單編號：1001     區域：Area1")
 
-    val dateTitle = new Label(shell, SWT.NONE)
+    val dateTitle = new Label(this, SWT.NONE)
     val dateTitleLayoutData = new GridData
     dateTitleLayoutData.horizontalAlignment = GridData.CENTER
     dateTitle.setLayoutData(dateTitleLayoutData)
     dateTitle.setText("2015-10-07")
 
-    val navigationButtons = new NavigationButtons(shell)
+    val navigationButtons = new NavigationButtons(this)
     val navigationButtonsLayoutData = new GridData
     navigationButtonsLayoutData.heightHint = 50
     navigationButtonsLayoutData.widthHint = 300
@@ -125,7 +123,7 @@ object OrderStatusSummary {
     navigationButtonsLayoutData.grabExcessHorizontalSpace = true
     navigationButtons.setLayoutData(navigationButtonsLayoutData)
 
-    val loadBlock = new CapacityBlock("Load", shell)
+    val loadBlock = new CapacityBlock("Load", this)
     val loadBlockLayoutData = new GridData
     loadBlockLayoutData.horizontalAlignment = GridData.FILL
     loadBlockLayoutData.grabExcessHorizontalSpace = true
@@ -134,7 +132,7 @@ object OrderStatusSummary {
     loadBlockLayoutData.horizontalSpan = 3
     loadBlock.setLayoutData(loadBlockLayoutData)
 
-    val unloadBlock = new CapacityBlock("UnLoad", shell)
+    val unloadBlock = new CapacityBlock("UnLoad", this)
     val unloadBlockLayoutData = new GridData
     unloadBlockLayoutData.horizontalAlignment = GridData.FILL
     unloadBlockLayoutData.grabExcessHorizontalSpace = true
@@ -142,8 +140,7 @@ object OrderStatusSummary {
     unloadBlockLayoutData.grabExcessVerticalSpace = true
     unloadBlockLayoutData.horizontalSpan = 3
     unloadBlock.setLayoutData(loadBlockLayoutData)
-
-    shell.setMaximized(true)
-    shell
   }
+
+  init()
 }

@@ -5,13 +5,10 @@ import org.eclipse.swt.widgets._
 import org.eclipse.swt.layout._
 import org.eclipse.swt.events._
 
-object QueryResult {
-
+class HistoryQueryResult(mainWindowShell: Shell, title: String) extends Composite(mainWindowShell, SWT.NONE) {
   
+  def init() {
 
-  def createWindow(title: String, parentShell: Shell) = {
-
-    val shell = new Shell(parentShell.getDisplay, SWT.SHELL_TRIM| SWT.APPLICATION_MODAL)
     val gridLayout = new GridLayout(2, true)
 
     gridLayout.horizontalSpacing = 20
@@ -19,16 +16,16 @@ object QueryResult {
     gridLayout.marginWidth = 200
     gridLayout.marginHeight = 200
 
-    shell.setLayout(gridLayout)
+    this.setLayout(gridLayout)
 
-    val titleLabel = new Label(shell, SWT.NONE)
+    val titleLabel = new Label(this, SWT.NONE)
     val titleLabelLayoutData = new GridData
     titleLabelLayoutData.horizontalAlignment = GridData.BEGINNING
     titleLabelLayoutData.grabExcessHorizontalSpace = true
     titleLabel.setText(title)
     titleLabel.setLayoutData(titleLabelLayoutData)
 
-    val navigationButtons = new NavigationButtons(shell)
+    val navigationButtons = new NavigationButtons(this)
     val navigationButtonsLayoutData = new GridData
     navigationButtonsLayoutData.heightHint = 50
     navigationButtonsLayoutData.widthHint = 300
@@ -37,7 +34,7 @@ object QueryResult {
     navigationButtons.setLayoutData(navigationButtonsLayoutData)
 
 
-    val table = new Table(shell, SWT.BORDER)
+    val table = new Table(this, SWT.BORDER)
     val tableLayoutData = new GridData
     tableLayoutData.horizontalAlignment = GridData.FILL
     tableLayoutData.verticalAlignment = GridData.FILL
@@ -47,8 +44,7 @@ object QueryResult {
     table.setLayoutData(tableLayoutData)
     table.addListener (SWT.DefaultSelection, new Listener () {
       override def handleEvent(event: Event) {
-        val orderSummaryWindow = OrderStatusSummary.createWindow(shell)
-        orderSummaryWindow.open()
+        MainWindow.pushComposite(new OrderStatusSummary(MainWindow.mainWindowShell))
       }
     })
     val columns = Array(new TableColumn(table, SWT.CENTER), new TableColumn(table, SWT.CENTER))
@@ -66,8 +62,7 @@ object QueryResult {
     }
 
     (0 until columns.size).foreach(i => table.getColumn(i).pack())
- 
-    shell.setMaximized(true)
-    shell
   }
+
+  init()
 }

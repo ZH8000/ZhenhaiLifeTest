@@ -5,11 +5,10 @@ import org.eclipse.swt.widgets._
 import org.eclipse.swt.layout._
 import org.eclipse.swt.events._
 
-object EditParameter {
+class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
-  def createWindow(parentShell: Shell) = {
+  def init() = {
 
-    val shell = new Shell(parentShell.getDisplay, SWT.SHELL_TRIM| SWT.APPLICATION_MODAL)
     val gridLayout = new GridLayout(1, true)
 
     gridLayout.horizontalSpacing = 20
@@ -17,9 +16,9 @@ object EditParameter {
     gridLayout.marginWidth = 200
     gridLayout.marginHeight = 200
 
-    shell.setLayout(gridLayout)
+    this.setLayout(gridLayout)
 
-    val navigationButtons = new NavigationButtons(shell)
+    val navigationButtons = new NavigationButtons(this)
     val navigationButtonsLayoutData = new GridData
     navigationButtonsLayoutData.heightHint = 50
     navigationButtonsLayoutData.widthHint = 300
@@ -28,7 +27,7 @@ object EditParameter {
     navigationButtonsLayoutData.grabExcessHorizontalSpace = true
     navigationButtons.setLayoutData(navigationButtonsLayoutData)
 
-    val group = new Group(shell, SWT.SHADOW_ETCHED_IN)
+    val group = new Group(this, SWT.SHADOW_ETCHED_IN)
     val groupLayoutData = new GridData
     groupLayoutData.horizontalAlignment = GridData.FILL
     groupLayoutData.verticalAlignment = GridData.FILL
@@ -81,7 +80,7 @@ object EditParameter {
     totalTimeLabel.setLayoutData(createLabelLayoutData)
     totalTimeTextEntry.setLayoutData(createTextEntryLayoutData)
 
-    val okButton = new Button(shell, SWT.PUSH)
+    val okButton = new Button(this, SWT.PUSH)
     val okButtonLayoutData = new GridData
     okButtonLayoutData.horizontalAlignment = GridData.END
     okButtonLayoutData.verticalAlignment = GridData.BEGINNING
@@ -94,14 +93,13 @@ object EditParameter {
     okButton.setText("確定")
     okButton.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(e: SelectionEvent) {
-        shell.dispose()
+        MainWindow.popComposite()
       }
     })
 
-
+    MainWindow.mainWindowShell.setDefaultButton(okButton)
     okButton.setFocus()
-    shell.setDefaultButton(okButton)
-    shell.setMaximized(true)
-    shell
   }
+
+  init()
 }

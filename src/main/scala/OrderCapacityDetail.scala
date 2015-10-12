@@ -38,13 +38,9 @@ class CapacityTestChart(title: String) {
 
 }
 
-object OrderCapacityDetail {
+class OrderCapacityDetail(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
-  
-
-  def createWindow(parentShell: Shell) = {
-
-    val shell = new Shell(parentShell.getDisplay, SWT.SHELL_TRIM| SWT.APPLICATION_MODAL)
+  def init() {
     val gridLayout = new GridLayout(3, true)
 
     gridLayout.horizontalSpacing = 20
@@ -52,18 +48,18 @@ object OrderCapacityDetail {
     gridLayout.marginWidth = 200
     gridLayout.marginHeight = 200
 
-    shell.setLayout(gridLayout)
+    this.setLayout(gridLayout)
 
-    val title = new Label(shell, SWT.NONE)
+    val title = new Label(this, SWT.NONE)
     title.setText("訂單編號：1001     區域：Area1")
 
-    val dateTitle = new Label(shell, SWT.NONE)
+    val dateTitle = new Label(this, SWT.NONE)
     val dateTitleLayoutData = new GridData
     dateTitleLayoutData.horizontalAlignment = GridData.CENTER
     dateTitle.setLayoutData(dateTitleLayoutData)
     dateTitle.setText("Cap X")
 
-    val navigationButtons = new NavigationButtons(shell)
+    val navigationButtons = new NavigationButtons(this)
     val navigationButtonsLayoutData = new GridData
     navigationButtonsLayoutData.heightHint = 50
     navigationButtonsLayoutData.widthHint = 300
@@ -72,7 +68,7 @@ object OrderCapacityDetail {
     navigationButtons.setLayoutData(navigationButtonsLayoutData)
   
     val chart1 = new CapacityTestChart("A")
-    val chart1Composite = chart1.createChartComposite(shell)
+    val chart1Composite = chart1.createChartComposite(this)
     val chart1CompositeLayoutData = new GridData
     chart1CompositeLayoutData.horizontalAlignment = GridData.FILL
     chart1CompositeLayoutData.grabExcessHorizontalSpace = true
@@ -81,7 +77,7 @@ object OrderCapacityDetail {
     chart1Composite.setLayoutData(chart1CompositeLayoutData)
 
     val chart2 = new CapacityTestChart("B")
-    val chart2Composite = chart2.createChartComposite(shell)
+    val chart2Composite = chart2.createChartComposite(this)
     val chart2CompositeLayoutData = new GridData
     chart2CompositeLayoutData.horizontalAlignment = GridData.FILL
     chart2CompositeLayoutData.grabExcessHorizontalSpace = true
@@ -90,16 +86,14 @@ object OrderCapacityDetail {
     chart2Composite.setLayoutData(chart2CompositeLayoutData)
 
     val chart3 = new CapacityTestChart("C")
-    val chart3Composite = chart3.createChartComposite(shell)
+    val chart3Composite = chart3.createChartComposite(this)
     val chart3CompositeLayoutData = new GridData
     chart3CompositeLayoutData.horizontalAlignment = GridData.FILL
     chart3CompositeLayoutData.grabExcessHorizontalSpace = true
     chart3CompositeLayoutData.verticalAlignment = GridData.FILL
     chart3CompositeLayoutData.grabExcessVerticalSpace = true
     chart3Composite.setLayoutData(chart2CompositeLayoutData)
-
-
-    shell.setMaximized(true)
-    shell
   }
+
+  init()
 }
