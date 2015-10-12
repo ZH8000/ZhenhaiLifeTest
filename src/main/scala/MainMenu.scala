@@ -17,6 +17,28 @@ class MainMenu(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NO
 
     this.setLayout(gridLayout)
 
+    val logoutButton = new Button(this, SWT.PUSH)
+    val logoutButtonLayoutData = new GridData
+    logoutButtonLayoutData.heightHint = 50
+    logoutButtonLayoutData.widthHint = 300
+    logoutButtonLayoutData.horizontalAlignment = GridData.END
+    logoutButtonLayoutData.horizontalSpan = 2
+    logoutButtonLayoutData.grabExcessHorizontalSpace = true
+    logoutButton.setLayoutData(logoutButtonLayoutData)
+    logoutButton.setText("登出")
+    logoutButton.addSelectionListener(new SelectionAdapter() {
+      override def widgetSelected(e: SelectionEvent) {
+        val messageBox = new MessageBox(mainWindowShell, SWT.ICON_QUESTION|SWT.OK|SWT.CANCEL)
+        messageBox.setText("登出嗎？")
+        messageBox.setMessage("確定要登出嗎？")
+        val resultCode = messageBox.open()
+        if (resultCode == SWT.OK) {
+          mainWindowShell.dispose()
+        }
+      }
+    })
+
+
     val monitorButton = new Button(this, SWT.PUSH|SWT.NO_FOCUS)
     val historyButton = new Button(this, SWT.PUSH|SWT.NO_FOCUS)
     val queryButton   = new Button(this, SWT.PUSH|SWT.NO_FOCUS)
