@@ -25,7 +25,7 @@ class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, S
       areaButtonLayoutData.grabExcessHorizontalSpace = true
       areaButtonLayoutData.grabExcessVerticalSpace = false
       areaButtonLayoutData.heightHint = 50
-      areaButton.setText(s"Area $areaNumber")
+      areaButton.setText(s"區塊 $areaNumber")
       areaButton.setLayoutData(areaButtonLayoutData)
       areaButton
     }
@@ -42,47 +42,49 @@ class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, S
       areaInfoLayoutData.minimumHeight = 50
       areaInfoGroup.setLayoutData(areaInfoLayoutData)
   
-      val areaInfoFillLayout = new GridLayout(1, true)
+      val areaInfoFillLayout = new GridLayout(2, true)
   
       areaInfoFillLayout.marginWidth = 10
       areaInfoFillLayout.marginHeight = 10
   
       areaInfoGroup.setLayout(areaInfoFillLayout)
   
-      if (hasInfo) {
-        val label1 = new Label(areaInfoGroup, SWT.NONE)
-        val label2 = new Label(areaInfoGroup, SWT.NONE)
-        val label3 = new Label(areaInfoGroup, SWT.NONE)
-        val label4 = new Label(areaInfoGroup, SWT.NONE)
+      val label1 = new Label(areaInfoGroup, SWT.NONE)
+      val text1 = new Text(areaInfoGroup, SWT.BORDER)
+      val label2 = new Label(areaInfoGroup, SWT.NONE)
+      val text2 = new Text(areaInfoGroup, SWT.BORDER)
+      val label3 = new Label(areaInfoGroup, SWT.NONE)
+      val text3 = new Text(areaInfoGroup, SWT.BORDER)
+      val label4 = new Label(areaInfoGroup, SWT.NONE)
+      val text4 = new Text(areaInfoGroup, SWT.BORDER)
+
+      val textLayoutData = new GridData
   
-        label1.setText("單號：12345")
-        label2.setText("Load: 10 / 10")
-        label3.setText("Unload: 10 / 10")
-        label4.setText("Duration: 2HR")
+      text1.setLayoutData(new GridData(GridData.FILL, GridData.BEGINNING, true, false))
+      text2.setLayoutData(new GridData(GridData.FILL, GridData.BEGINNING, true, false))
+      text3.setLayoutData(new GridData(GridData.FILL, GridData.BEGINNING, true, false))
+      text4.setLayoutData(new GridData(GridData.FILL, GridData.BEGINNING, true, false))
+
+ 
+      label1.setText("料號：")
+      label2.setText("良品：")
+      label3.setText("測試時間：")
+      label4.setText("狀態：")
   
-        areaButton.addSelectionListener(new SelectionAdapter() {
-          override def widgetSelected(e: SelectionEvent) {
-            MainWindow.appendLog(s"點選「${areaButton.getText}」")
-            MainWindow.pushComposite(new OrderStatusSummary(mainWindowShell))
-          }
-        })
+      areaButton.addSelectionListener(new SelectionAdapter() {
+        override def widgetSelected(e: SelectionEvent) {
+          MainWindow.appendLog(s"點選「${areaButton.getText}」")
+          MainWindow.pushComposite(new OrderStatusSummary(mainWindowShell))
+        }
+      })
   
-      } else {
-        areaButton.addSelectionListener(new SelectionAdapter() {
-          override def widgetSelected(e: SelectionEvent) {
-            MainWindow.appendLog(s"點選「${areaButton.getText}」")
-            MainWindow.pushComposite(new AddTestPlain(MainWindow.mainWindowShell))
-          }
-        })
-      }
-      
       areaInfoGroup
     }
   }
 
   def init() {
 
-    val gridLayout = new GridLayout(4, true)
+    val gridLayout = new GridLayout(6, true)
 
     gridLayout.horizontalSpacing = 20
     gridLayout.verticalSpacing = 20
@@ -91,20 +93,13 @@ class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, S
 
     this.setLayout(gridLayout)
 
-    val titleLabel = new Label(this, SWT.CENTER)
-    val titleLabelLayoutData = new GridData
-
-    titleLabel.setText("2015-10-10")
-    titleLabelLayoutData.horizontalAlignment = GridData.CENTER
-    titleLabelLayoutData.verticalAlignment = GridData.CENTER
-    titleLabelLayoutData.horizontalSpan = 3
-    titleLabel.setLayoutData(titleLabelLayoutData)
-
     val navigationButtons = new NavigationButtons(this)
     val navigationButtonsLayoutData = new GridData
     navigationButtonsLayoutData.heightHint = 50
     navigationButtonsLayoutData.widthHint = 300
     navigationButtonsLayoutData.horizontalAlignment = GridData.END
+    navigationButtonsLayoutData.horizontalSpan = 6
+
     navigationButtons.setLayoutData(navigationButtonsLayoutData)
 
     val areas = Array(
@@ -114,8 +109,12 @@ class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, S
       new AreaInfo(this, 4, true),
       new AreaInfo(this, 5, false),
       new AreaInfo(this, 6, true),
-      new AreaInfo(this, 7, true),
-      new AreaInfo(this, 8, false)
+      new AreaInfo(this, 7, true), 
+      new AreaInfo(this, 8, true),
+      new AreaInfo(this, 9, false),
+      new AreaInfo(this, 10, true),
+      new AreaInfo(this, 11, false),
+      new AreaInfo(this, 12, true)
     )
 
     def createGridData = {
