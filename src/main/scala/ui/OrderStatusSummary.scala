@@ -26,7 +26,7 @@ object TestSetting {
 
   Class.forName("org.sqlite.JDBC")
 
-  val db = new Database("/home/brianhsu/WorkRoom/LifeTestController/sample.db")
+  val db = new Database("sample.db")
 }
 
 
