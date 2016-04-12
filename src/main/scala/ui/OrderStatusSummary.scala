@@ -1,6 +1,8 @@
 package tw.com.zhenhai.lifetest;
 
 import zhenhai.lifetest.controller.model._
+import java.util.Date
+import java.text.SimpleDateFormat
 import org.eclipse.swt._
 import org.eclipse.swt.widgets.{List => SWTList, _}
 import org.eclipse.swt.layout._
@@ -59,13 +61,20 @@ class TextEntryField(title: String, isReadOnly: Boolean, isEqualWidth: Boolean, 
   entry.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true , false))
   titleLabel.setText(title)
   
+  override def setBackground(color: org.eclipse.swt.graphics.Color) {
+    entry.setBackground(color)
+  }
+
   def setText(text: String) {
     entry.setText(text)
   }
 }
 
 class TestControl(parent: Composite) extends Composite(parent, SWT.NONE) {
+
   val groupFrame = new Group(this, SWT.SHADOW_ETCHED_IN)
+  val dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+
   this.setLayout(new FillLayout)
   groupFrame.setLayout(new GridLayout(6, true))
   groupFrame.setText("測試控制")
@@ -100,6 +109,10 @@ class TestControl(parent: Composite) extends Composite(parent, SWT.NONE) {
 
   startTime.setLayoutData(timeLayoutData1)
   stopTime.setLayoutData(timeLayoutData2)
+
+  def updateTimeInfo(orderInfoHolder: Option[TestingOrder]) {
+
+  }
 }
 
 
@@ -156,15 +169,22 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
 
   class CapacityButton(title: String, parent: Composite) extends Composite(parent, SWT.NONE) {
 
-    val gridLayout = new GridLayout(1, false)
+    val gridLayout = new GridLayout(2, false)
     gridLayout.verticalSpacing = 2
     this.setLayout(gridLayout)
 
     val titleButton = createTitleButton(title)
-    val capacityInfo = new TextEntryField("電容值：", true, false, this)
-    val dxValueInfo = new TextEntryField("損耗角：", true , false, this)
-    val leakCurrentInfo = new TextEntryField("漏電流：", true, false, this)
 
+    val capacityInfo = new TextEntryField("電容值：", true, false, this)
+    val capacityStatusLabel = new Label(this, SWT.NONE)
+    val dxValueInfo = new TextEntryField("損耗角：", true , false, this)
+    val dxValueStatusLabel = new Label(this, SWT.NONE)
+    val leakCurrentInfo = new TextEntryField("漏電流：", true, false, this)
+    val leakCurrentStatusLabel = new Label(this, SWT.NONE)
+
+    val titleButtonLayoutData = new GridData(SWT.FILL, SWT.FILL, true, true)
+    titleButtonLayoutData.horizontalSpan = 2
+    titleButton.setLayoutData(titleButtonLayoutData)
     capacityInfo.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false))
     dxValueInfo.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false))
     leakCurrentInfo.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false))
@@ -188,39 +208,63 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
       button
     }
 
+    val greenColor = Display.getCurrent.getSystemColor(SWT.COLOR_GREEN)
+    val redColor = Display.getCurrent.getSystemColor(SWT.COLOR_RED)
+
     def updateStatus(testingResultHolder: Option[TestingResult]) {
+
+
       testingResultHolder.foreach { testingResult =>
         capacityInfo.setText(testingResult.capacity.toString)
         dxValueInfo.setText(testingResult.dxValue.toString)
-        testingResult.isOK match {
-          case true  => titleButton.setBackground(Display.getCurrent.getSystemColor(SWT.COLOR_GREEN))
-          case false => titleButton.setBackground(Display.getCurrent.getSystemColor(SWT.COLOR_RED))
-        }
+        
+        val isCapacityOKIcon = if (testingResult.isCapacityOK) "O" else "X"
+        val isDXValueOKIcon = if (testingResult.isDXValueOK) "O" else "X"
+        
+        capacityStatusLabel.setText(isCapacityOKIcon)
+        dxValueStatusLabel.setText(isDXValueOKIcon)
+
+        val titleButtonColor = if (testingResult.isOK) greenColor else redColor
+        titleButton.setBackground(titleButtonColor)
       }
     }
   }
 
 
-  val groupFrame = new Group(this, SWT.SHADOW_ETCHED_IN)
+  val groupFrame = createGroupFrame()
+  val buttons = createCapcityInfos()
 
-  this.setLayout(new FillLayout)
-  groupFrame.setLayout(new GridLayout(5, true))
-  groupFrame.setText(title)
+  def init() {
+    this.setLayout(new FillLayout)
+  }
 
-  val buttons = Array(
-    new CapacityButton("電容 1", groupFrame),
-    new CapacityButton("電容 2", groupFrame),
-    new CapacityButton("電容 3", groupFrame),
-    new CapacityButton("電容 4", groupFrame),
-    new CapacityButton("電容 5", groupFrame),
-    new CapacityButton("電容 6", groupFrame),
-    new CapacityButton("電容 7", groupFrame),
-    new CapacityButton("電容 8", groupFrame),
-    new CapacityButton("電容 9", groupFrame),
-    new CapacityButton("電容 10", groupFrame)
-  )
+  def createGroupFrame() = {
+    val groupFrame = new Group(this, SWT.SHADOW_ETCHED_IN)
+    val gridLayout = new GridLayout(5, true)
+    gridLayout.horizontalSpacing = 50
+    groupFrame.setLayout(gridLayout)
+    groupFrame.setText(title)
+    groupFrame
+  }
 
-  buttons.foreach(_.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true)))
+  def createCapcityInfos() = {
+    val buttons = Array(
+      new CapacityButton("電容 1", groupFrame),
+      new CapacityButton("電容 2", groupFrame),
+      new CapacityButton("電容 3", groupFrame),
+      new CapacityButton("電容 4", groupFrame),
+      new CapacityButton("電容 5", groupFrame),
+      new CapacityButton("電容 6", groupFrame),
+      new CapacityButton("電容 7", groupFrame),
+      new CapacityButton("電容 8", groupFrame),
+      new CapacityButton("電容 9", groupFrame),
+      new CapacityButton("電容 10", groupFrame)
+    )
+
+    buttons.foreach(_.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true)))
+    buttons
+  }
+
 
   def updateCapacityInfo(orderInfoHolder: Option[TestingOrder]) {
 
@@ -234,6 +278,8 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
     }
 
   }
+
+  init()
 }
 
 class OrderStatusSummary(blockNo: Int, daughterBoard: Int, testingBoard: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {

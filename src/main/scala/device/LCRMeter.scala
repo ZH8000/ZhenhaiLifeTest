@@ -35,18 +35,19 @@ case class LCRResult(capacityValue: BigDecimal, capacityStatus: String, dxValue:
     case _   => (0,             0)
   }
 
-  def isOK(standardCapacity: BigDecimal, standardDXValue: BigDecimal, marginOfError: String) = {
+  def isCapacityOK(standardCapacity: BigDecimal, marginOfError: String) = {
+    val (lowerBound, higherBound) = codeToMargin(marginOfError)
+    capacityValue >= standardCapacity + (standardCapacity * lowerBound) &&
+    capacityValue <= standardCapacity + (standardCapacity * higherBound)
+  }
+
+  def isDXValueOK(standardDXValue: BigDecimal, marginOfError: String) = {
     val (lowerBound, higherBound) = codeToMargin(marginOfError)
 
-    val isCapacityOK = 
-      capacityValue >= standardCapacity + (standardCapacity * lowerBound) &&
-      capacityValue <= standardCapacity + (standardCapacity * higherBound)
-    val isDXValueOK = 
-      dxValue >= standardDXValue + (standardDXValue * lowerBound) &&
-      dxValue <= standardDXValue + (standardDXValue * higherBound)
+    dxValue >= standardDXValue + (standardDXValue * lowerBound) &&
+    dxValue <= standardDXValue + (standardDXValue * higherBound)
 
-    //! 確認 DX 的測量值的精準度
-    isCapacityOK //&& isDXValueOK
+    true
   }
 }
 

@@ -9,12 +9,12 @@ case class PowerSupplyStatus(isOutput: Boolean, voltage: Double)
 
 object Main {
 
-  val mainBoardPort = "/dev/ttyUSB4"
-  val lcrMeterPort = "/dev/ttyUSB5"
-  val powerSuppliesPort = Map(0 -> "/dev/ttyUSB3")
+  val mainBoardPort = "/dev/ttyUSB2"
+  val lcrMeterPort = "/dev/ttyUSB1"
+  val powerSuppliesPort: Map[Int, String] = Map.empty //(0 -> "/dev/ttyUSB3")
 
   val daughterBoardCount = 3    // 總共有幾組測試子板
-  val capaciyCount = 10         // 一組的電容有幾顆
+  val capaciyCount = 3         // 一組的電容有幾顆
   val rtDaughterBoard = 0       // 室溫測試板的子板編號
   val rtTestingBoard = 0        // 室溫測試板的烤箱板編號
 
@@ -22,7 +22,7 @@ object Main {
 
   val mainBoard = new MainBoard(mainBoardPort)
   val lcrMeter = new LCRMeter(lcrMeterPort)
-  val powerSupplies = powerSuppliesPort.map { case (daughterBoard, port) => (daughterBoard, new GENH600(port)) }
+  val powerSupplies: Map[Int, GENH600] = powerSuppliesPort.map { case (daughterBoard, port) => (daughterBoard, new GENH600(port)) }
   var powerSuppliesStatus: Map[Int, PowerSupplyStatus] = Map.empty
   
   /**
@@ -43,15 +43,15 @@ object Main {
         println("  ==> 測試單：" + testingOrder)
 
         val initialCheckingAndUUID = for {
-          powerSupply       <- Try(powerSupplies(testingOrder.daughterBoard))
+          //powerSupply       <- Try(powerSupplies(testingOrder.daughterBoard))
           isHVRelayOK       <- mainBoard.isHVRelayOK(testingOrder.daughterBoard, testingOrder.testingBoard) if isHVRelayOK
           disableCharge     <- mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, false)
-          setVoltage        <- powerSupply.setVoltage(testingOrder.voltage)
+          //setVoltage        <- powerSupply.setVoltage(testingOrder.voltage)
           uuid              <- mainBoard.getUUID(0, 0)
           enableCharge      <- mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, true)
           disableLCRChannel <- mainBoard.setLCRChannel(testingOrder.daughterBoard, testingOrder.testingBoard, 0)
           disableLCChannel  <- mainBoard.setLCChannel(testingOrder.daughterBoard, testingOrder.testingBoard, 0)
-        } yield (uuid, powerSupply)
+        } yield (uuid, null)//, powerSupply)
 
         initialCheckingAndUUID match {
           case Failure(e: NoSuchElementException) => db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 3))
@@ -63,7 +63,7 @@ object Main {
             db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 8))
           case Success((uuid, powerSupply)) if uuid == testingOrder.tbUUID => 
             val currentTimestamp = System.currentTimeMillis
-            powerSupply.setOutput(true)
+            //powerSupply.setOutput(true)
             db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 9))
             db.updateTestingOrder(testingOrder.copy(currentStatus = 1, startTime = currentTimestamp, lastTestTime = currentTimestamp))
         }
@@ -100,24 +100,22 @@ object Main {
         case Failure(e) if isInRoomTemperature  => db.insertRoomTemperatureTestingErrorLog(testingOrder.id, capacityID, e.toString)
         case Failure(e) if !isInRoomTemperature => db.insertOvenTestingErrorLog(testingOrder.id, capacityID, e.toString)
         case Success(result) =>
-          val isCapacityOK = result.isOK(testingOrder.capacity, testingOrder.dxValue, testingOrder.marginOfError)
+          val isCapacityOK = result.isCapacityOK(testingOrder.capacity, testingOrder.marginOfError)
+          val isDXValueOK = result.isDXValueOK(testingOrder.capacity, testingOrder.marginOfError)
+          val isLeakCurrentOK = true
+          //val isOK = isCapacityOK && isDXValueOK && isLeakCurrentOK
+          val isOK = result.capacityValue != 0 
+          val testingResult = TestingResult(
+            testingOrder.id, capacityID, 
+            result.capacityValue.toDouble, result.dxValue.toDouble, 
+            isCapacityOK, isDXValueOK, isLeakCurrentOK, isOK,
+            System.currentTimeMillis
+          )
           
           if (isInRoomTemperature) {
-            db.insertRoomTemperatureTestingResult(
-              TestingResult(
-                testingOrder.id, capacityID, 
-                result.capacityValue.toDouble, result.dxValue.toDouble, isCapacityOK,
-                System.currentTimeMillis
-              )
-            )
+            db.insertRoomTemperatureTestingResult(testingResult)
           } else {
-            db.insertOvenTestingResult(
-              TestingResult(
-                testingOrder.id, capacityID, 
-                result.capacityValue.toDouble, result.dxValue.toDouble, isCapacityOK,
-                System.currentTimeMillis
-              )
-            )
+            db.insertOvenTestingResult(testingResult)
           }
       }
     }

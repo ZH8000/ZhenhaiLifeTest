@@ -18,21 +18,27 @@ CREATE TABLE TestingOrder (
 );
 
 CREATE TABLE OvenTestingResult (
-  testingID   INTEGER NOT NULL,
-  capacityID  INTEGER NOT NULL,
-  capacity    REAL    NOT NULL,
-  dxValue     REAL    NOT NULL,
-  isOK        BOOLEAN NOT NULL,
-  timestamp   INTEGER NOT NULL
+  testingID         INTEGER NOT NULL,
+  capacityID        INTEGER NOT NULL,
+  capacity          REAL    NOT NULL,
+  dxValue           REAL    NOT NULL,
+  isCapacityOK      BOOLEAN NOT NULL,
+  isDXValueOK       BOOLEAN NOT NULL,
+  isLeakCurrentOK   BOOLEAN NOT NULL,
+  isOK              BOOLEAN NOT NULL,
+  timestamp         INTEGER NOT NULL
 );
 
 CREATE TABLE RoomTemperatureTestingResult (
-  testingID   INTEGER NOT NULL,
-  capacityID  INTEGER NOT NULL,
-  capacity    REAL    NOT NULL,
-  dxValue     REAL    NOT NULL,
-  isOK        BOOLEAN NOT NULL,
-  timestamp   INTEGER NOT NULL
+  testingID         INTEGER NOT NULL,
+  capacityID        INTEGER NOT NULL,
+  capacity          REAL    NOT NULL,
+  dxValue           REAL    NOT NULL,
+  isCapacityOK      BOOLEAN NOT NULL,
+  isDXValueOK       BOOLEAN NOT NULL,
+  isLeakCurrentOK   BOOLEAN NOT NULL,
+  isOK              BOOLEAN NOT NULL,
+  timestamp         INTEGER NOT NULL
 );
 
 CREATE TABLE OvenTestingQueue (

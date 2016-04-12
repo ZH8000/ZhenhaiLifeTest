@@ -147,22 +147,36 @@ class Database(filename: String) {
   /**
    *  寫入室溫測試結果資料表
    *
+   *  @param    tableName 資料表名稱
    *  @param    result    要寫入的室溫測試結果
    */
-  def insertRoomTemperatureTestingResult(result: TestingResult) {
+  def insertTestingResult(tableName: String, result: TestingResult) {
     val statement = connection.prepareStatement(
-      "INSERT INTO RoomTemperatureTestingResult " +
-      "(testingID, capacityID, capacity, dxValue, isOK, timestamp) VALUES " +
-      "(?, ?, ?, ?, ?, ?)"
+      s"INSERT INTO $tableName " +
+       "(testingID, capacityID, capacity, dxValue, isCapacityOK, isDXValueOK, isLeakCurrentOK, isOK, timestamp) VALUES " +
+       "(?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     statement.setLong(1, result.testingID)
     statement.setInt(2, result.capacityID)
     statement.setDouble(3, result.capacity)
     statement.setDouble(4, result.dxValue)
-    statement.setBoolean(5, result.isOK)
-    statement.setLong(6, result.timestamp)
+    statement.setBoolean(5, result.isCapacityOK)
+    statement.setBoolean(6, result.isDXValueOK)
+    statement.setBoolean(7, result.isLeakCurrentOK)
+    statement.setBoolean(8, result.isOK)
+    statement.setLong(9, result.timestamp)
     statement.executeUpdate()
     statement.close()
+
+  }
+
+  /**
+   *  寫入室溫測試結果資料表
+   *
+   *  @param    result    要寫入的室溫測試結果
+   */
+  def insertRoomTemperatureTestingResult(result: TestingResult) {
+    insertTestingResult("RoomTemperatureTestingResult", result)
   }
 
   /**
@@ -171,19 +185,7 @@ class Database(filename: String) {
    *  @param    result    要寫入的烤箱測試結果
    */
   def insertOvenTestingResult(result: TestingResult) {
-    val statement = connection.prepareStatement(
-      "INSERT INTO OvenTestingResult " +
-      "(testingID, capacityID, capacity, dxValue, isOK, timestamp) VALUES " +
-      "(?, ?, ?, ?, ?, ?)"
-    )
-    statement.setLong(1, result.testingID)
-    statement.setInt(2, result.capacityID)
-    statement.setDouble(3, result.capacity)
-    statement.setDouble(4, result.dxValue)
-    statement.setBoolean(5, result.isOK)
-    statement.setLong(6, result.timestamp)
-    statement.executeUpdate()
-    statement.close()
+    insertTestingResult("OvenTestingResult", result)
   }
 
   /**
@@ -621,7 +623,10 @@ class Database(filename: String) {
           cursor.getDouble(3),
           cursor.getDouble(4),
           cursor.getBoolean(5),
-          cursor.getLong(6)
+          cursor.getBoolean(6),
+          cursor.getBoolean(7),
+          cursor.getBoolean(8),
+          cursor.getLong(9)
         )
       )
     }
