@@ -1,5 +1,6 @@
 package tw.com.zhenhai.lifetest;
 
+import zhenhai.lifetest.controller.model._
 import org.eclipse.swt._
 import org.eclipse.swt.widgets.{List => SWTList, _}
 import org.eclipse.swt.layout._
@@ -18,6 +19,10 @@ object TestSetting {
   val leakCurrentList = List("I=0.01CV or 3uA", "I=0.03CV or 4uA", "I=0.1CV+40", "I=0.04CV+100", "I=0.06CV+10uA", "I=0.03CV or 3uA")
   val dxList = List(0.08, 0.09, 0.1, 0.12, 0.14, 0.15, 0.16, 0.19, 0.2, 0.22, 0.24, 0.25, 0.28)
   val intervalList = List(1, 2, 3, 5, 6, 10, 12, 24, 50)
+
+  Class.forName("org.sqlite.JDBC")
+
+  val db = new Database("/home/brianhsu/WorkRoom/LifeTestController/sample.db")
 }
 
 
@@ -34,8 +39,8 @@ class DropdownField[T](title: String, selection: List[T], parent: Composite) ext
   selection.foreach { item => combo.add(item.toString) }
 }
 
-class TextEntryField(title: String, isReadOnly: Boolean, parent: Composite) extends Composite(parent, SWT.NONE) {
-  val gridLayout = new GridLayout(2, false)
+class TextEntryField(title: String, isReadOnly: Boolean, isEqualWidth: Boolean, parent: Composite) extends Composite(parent, SWT.NONE) {
+  val gridLayout = new GridLayout(2, isEqualWidth)
   val titleLabel = new Label(this, SWT.NONE)
   val attributes = if (isReadOnly) {SWT.BORDER|SWT.READ_ONLY} else {SWT.BORDER}
   val entry = new Text(this, attributes)
@@ -45,6 +50,10 @@ class TextEntryField(title: String, isReadOnly: Boolean, parent: Composite) exte
 
   entry.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true , false))
   titleLabel.setText(title)
+  
+  def setText(text: String) {
+    entry.setText(text)
+  }
 }
 
 class TestControl(parent: Composite) extends Composite(parent, SWT.NONE) {
@@ -56,8 +65,8 @@ class TestControl(parent: Composite) extends Composite(parent, SWT.NONE) {
   val startRoomTemperatureTestButton = new Button(groupFrame, SWT.PUSH)
   val startOvenTestButton = new Button(groupFrame, SWT.PUSH)
   val stopTestButton = new Button(groupFrame, SWT.PUSH)
-  val startTime = new TextEntryField("開始時間：", true, groupFrame)
-  val stopTime = new TextEntryField("測試時間：", true, groupFrame)
+  val startTime = new TextEntryField("開始時間：", true, false, groupFrame)
+  val stopTime = new TextEntryField("測試時間：", true, false, groupFrame)
 
   val buttonLayoutData1 = new GridData(SWT.FILL, SWT.FILL, true, true)
   val buttonLayoutData2 = new GridData(SWT.FILL, SWT.FILL, true, true)
@@ -83,15 +92,12 @@ class TestControl(parent: Composite) extends Composite(parent, SWT.NONE) {
 
   startTime.setLayoutData(timeLayoutData1)
   stopTime.setLayoutData(timeLayoutData2)
-
 }
 
 
 class TestSetting(parent: Composite) extends Composite(parent, SWT.NONE) {
-
-
   val groupFrame = new Group(this, SWT.SHADOW_ETCHED_IN)
-  val partNoEntry = new TextEntryField("料　　號：", false, groupFrame)
+  val partNoEntry = new TextEntryField("料　　號：", false, false, groupFrame)
   val voltage = new DropdownField("電壓設定：", TestSetting.voltageList, groupFrame)
   val testingTime = new DropdownField("測試時間：", TestSetting.testingTimeList, groupFrame)
   val capacity = new DropdownField("電容容量：", TestSetting.capacityList, groupFrame)
@@ -124,8 +130,8 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
     this.setLayout(gridLayout)
 
     val titleButton = createTitleButton(title)
-    val capacityInfo = new TextEntryField("電容值：", true, this)
-    val leakCurrentInfo = new TextEntryField("漏電流：", true, this)
+    val capacityInfo = new TextEntryField("電容值：", true, false, this)
+    val leakCurrentInfo = new TextEntryField("漏電流：", true, false, this)
 
     capacityInfo.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false))
     leakCurrentInfo.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false))
@@ -182,6 +188,9 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
 
 class OrderStatusSummary(blockNo: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
+
+  println(TestSetting.db.getTables())
+
   def init() {
 
     val gridLayout = new GridLayout(3, true)
@@ -218,8 +227,6 @@ class OrderStatusSummary(blockNo: Int, mainWindowShell: Shell) extends Composite
     val testControlLayoutData = new GridData(GridData.FILL, GridData.FILL, true, false)
     testControl.setLayoutData(testControlLayoutData)
    
-
-
     val loadBlock = new CapacityBlock("測試狀態", this)
     val loadBlockLayoutData = new GridData
     loadBlockLayoutData.horizontalAlignment = GridData.FILL
