@@ -6,3 +6,4 @@ src/main/resources/props/*
 *.swp
 *.swo
 2016-*
+*.db
