@@ -37,7 +37,7 @@ import java.time.LocalTime
  *  @param  isRoomTemperatureTested   是否已執行過室溫初始測試
  */
 case class TestingOrder(
-  id: Long, partNo: String, capacity: Double, voltage: Int, 
+  id: Long, partNo: String, capacity: Double, voltage: Double, 
   leakCurrent: String, dxValue: Double, marginOfError: String, 
   testingTime: Int, testingInterval: Int, daughterBoard: Int, 
   testingBoard: Int, tbUUID: String, startTime: Long, 

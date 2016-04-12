@@ -149,7 +149,7 @@ class Database(filename: String) {
    *
    *  @param    result    要寫入的室溫測試結果
    */
-  def insertRoomTemperatureTestingResult(result: RoomTemperatureTestingResult) {
+  def insertRoomTemperatureTestingResult(result: TestingResult) {
     val statement = connection.prepareStatement(
       "INSERT INTO RoomTemperatureTestingResult " +
       "(testingID, capacityID, capacity, dxValue, isOK, timestamp) VALUES " +
@@ -170,7 +170,7 @@ class Database(filename: String) {
    *
    *  @param    result    要寫入的烤箱測試結果
    */
-  def insertOvenTestingResult(result: OvenTestingResult) {
+  def insertOvenTestingResult(result: TestingResult) {
     val statement = connection.prepareStatement(
       "INSERT INTO OvenTestingResult " +
       "(testingID, capacityID, capacity, dxValue, isOK, timestamp) VALUES " +
@@ -223,7 +223,7 @@ class Database(filename: String) {
         cursor.getLong(1),
         cursor.getString(2),
         cursor.getDouble(3),
-        cursor.getInt(4),
+        cursor.getDouble(4),
         cursor.getString(5),
         cursor.getDouble(6),
         cursor.getString(7),
@@ -259,7 +259,7 @@ class Database(filename: String) {
     )
     statement.setString(1, updated.partNo)
     statement.setDouble(2, updated.capacity)
-    statement.setInt(3, updated.voltage)
+    statement.setDouble(3, updated.voltage)
     statement.setString(4, updated.leakCurrent)
     statement.setDouble(5, updated.dxValue)
     statement.setString(6, updated.marginOfError)
@@ -347,7 +347,7 @@ class Database(filename: String) {
         cursor.getLong(1),
         cursor.getString(2),
         cursor.getDouble(3),
-        cursor.getInt(4),
+        cursor.getDouble(4),
         cursor.getString(5),
         cursor.getDouble(6),
         cursor.getString(7),
@@ -393,7 +393,7 @@ class Database(filename: String) {
         cursor.getLong(1),
         cursor.getString(2),
         cursor.getDouble(3),
-        cursor.getInt(4),
+        cursor.getDouble(4),
         cursor.getString(5),
         cursor.getDouble(6),
         cursor.getString(7),
@@ -574,7 +574,7 @@ class Database(filename: String) {
         cursor.getLong(1),
         cursor.getString(2),
         cursor.getDouble(3),
-        cursor.getInt(4),
+        cursor.getDouble(4),
         cursor.getString(5),
         cursor.getDouble(6),
         cursor.getString(7),
@@ -601,7 +601,34 @@ class Database(filename: String) {
     (goodCapacity -- damagedCapacity).size
   }
 
+  def getTestingResult(testingID: Long, capacityID: Int): Option[TestingResult] = {
+    var result: Option[TestingResult] = None
+    val statement = connection.prepareStatement(
+      "SELECT * FROM RoomTemperatureTestingResult where testingID=? AND capacityID=? UNION SELECT * FROM OvenTestingResult where testingID=? AND capacityID=? ORDER BY timestamp DESC"
+    )
 
+    statement.setLong(1, testingID)
+    statement.setInt(2, capacityID)
+    statement.setLong(3, testingID)
+    statement.setInt(4, capacityID)
+
+    val cursor = statement.executeQuery()
+    if (cursor.next()) {
+      result = Some(
+        TestingResult(
+          cursor.getLong(1),
+          cursor.getInt(2),
+          cursor.getDouble(3),
+          cursor.getDouble(4),
+          cursor.getBoolean(5),
+          cursor.getLong(6)
+        )
+      )
+    }
+    cursor.close()
+    statement.close()
+    result
+  }
 
   initDB()
 

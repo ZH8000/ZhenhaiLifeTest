@@ -20,6 +20,10 @@ object TestSetting {
   val dxList = List(0.08, 0.09, 0.1, 0.12, 0.14, 0.15, 0.16, 0.19, 0.2, 0.22, 0.24, 0.25, 0.28)
   val intervalList = List(1, 2, 3, 5, 6, 10, 12, 24, 50)
 
+  def marginOfErrorCodeToFullText(code: String) = {
+    marginOfErrorList.filter(_.startsWith(code))(0)
+  }
+
   Class.forName("org.sqlite.JDBC")
 
   val db = new Database("/home/brianhsu/WorkRoom/LifeTestController/sample.db")
@@ -37,6 +41,10 @@ class DropdownField[T](title: String, selection: List[T], parent: Composite) ext
   titleLabel.setText(title)
   combo.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true , false))
   selection.foreach { item => combo.add(item.toString) }
+
+  def setText(text: String) {
+    combo.setText(text)
+  }
 }
 
 class TextEntryField(title: String, isReadOnly: Boolean, isEqualWidth: Boolean, parent: Composite) extends Composite(parent, SWT.NONE) {
@@ -119,6 +127,29 @@ class TestSetting(parent: Composite) extends Composite(parent, SWT.NONE) {
   marginOfError.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
   dx.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
 
+  def updateSettingInfo(testingOrderHolder: Option[TestingOrder]) {
+    testingOrderHolder match {
+      case None =>
+        this.partNoEntry.setText("")
+        this.voltage.setText("")
+        this.testingTime.setText("")
+        this.capacity.setText("")
+        this.leakCurrent.setText("")
+        this.testingInterval.setText("")
+        this.marginOfError.setText("")
+        this.dx.setText("")
+      case Some(testingOrder) =>
+        this.setEnabled(false)
+        this.partNoEntry.setText(testingOrder.partNo)
+        this.voltage.setText(testingOrder.voltage.toString)
+        this.testingTime.setText(testingOrder.testingTime.toString)
+        this.capacity.setText(testingOrder.capacity.toString)
+        this.leakCurrent.setText(testingOrder.leakCurrent)
+        this.testingInterval.setText(testingOrder.testingInterval.toString)
+        this.marginOfError.setText(TestSetting.marginOfErrorCodeToFullText(testingOrder.marginOfError))
+        this.dx.setText(testingOrder.dxValue.toString)
+    }
+  }
 }
 
 class CapacityBlock(title: String, parent: Composite) extends Composite(parent, SWT.NONE) {
@@ -126,14 +157,16 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
   class CapacityButton(title: String, parent: Composite) extends Composite(parent, SWT.NONE) {
 
     val gridLayout = new GridLayout(1, false)
-    gridLayout.verticalSpacing = 10
+    gridLayout.verticalSpacing = 2
     this.setLayout(gridLayout)
 
     val titleButton = createTitleButton(title)
     val capacityInfo = new TextEntryField("電容值：", true, false, this)
+    val dxValueInfo = new TextEntryField("損耗角：", true , false, this)
     val leakCurrentInfo = new TextEntryField("漏電流：", true, false, this)
 
     capacityInfo.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false))
+    dxValueInfo.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false))
     leakCurrentInfo.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false))
 
     def createTitleButton(title: String) = {
@@ -154,6 +187,17 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
       })
       button
     }
+
+    def updateStatus(testingResultHolder: Option[TestingResult]) {
+      testingResultHolder.foreach { testingResult =>
+        capacityInfo.setText(testingResult.capacity.toString)
+        dxValueInfo.setText(testingResult.dxValue.toString)
+        testingResult.isOK match {
+          case true  => titleButton.setBackground(Display.getCurrent.getSystemColor(SWT.COLOR_GREEN))
+          case false => titleButton.setBackground(Display.getCurrent.getSystemColor(SWT.COLOR_RED))
+        }
+      }
+    }
   }
 
 
@@ -163,35 +207,96 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
   groupFrame.setLayout(new GridLayout(5, true))
   groupFrame.setText(title)
 
-  val button1  = new CapacityButton("電容 1", groupFrame)
-  val button2  = new CapacityButton("電容 2", groupFrame)
-  val button3  = new CapacityButton("電容 3", groupFrame)
-  val button4  = new CapacityButton("電容 4", groupFrame)
-  val button5  = new CapacityButton("電容 5", groupFrame)
-  val button6  = new CapacityButton("電容 6", groupFrame)
-  val button7  = new CapacityButton("電容 7", groupFrame)
-  val button8  = new CapacityButton("電容 8", groupFrame)
-  val button9  = new CapacityButton("電容 9", groupFrame)
-  val button10 = new CapacityButton("電容 10", groupFrame)
+  val buttons = Array(
+    new CapacityButton("電容 1", groupFrame),
+    new CapacityButton("電容 2", groupFrame),
+    new CapacityButton("電容 3", groupFrame),
+    new CapacityButton("電容 4", groupFrame),
+    new CapacityButton("電容 5", groupFrame),
+    new CapacityButton("電容 6", groupFrame),
+    new CapacityButton("電容 7", groupFrame),
+    new CapacityButton("電容 8", groupFrame),
+    new CapacityButton("電容 9", groupFrame),
+    new CapacityButton("電容 10", groupFrame)
+  )
 
-  button1.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true))
-  button2.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true))
-  button3.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true))
-  button4.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true))
-  button5.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true))
-  button6.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true))
-  button7.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true))
-  button8.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true))
-  button9.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true))
-  button10.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true))
+  buttons.foreach(_.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true)))
+
+  def updateCapacityInfo(orderInfoHolder: Option[TestingOrder]) {
+
+    for {
+      orderInfo <- orderInfoHolder
+      capacityID <- 1 to 10
+      button = buttons(capacityID-1)
+    } {
+      println("capacityID:" + capacityID)
+      button.updateStatus(TestSetting.db.getTestingResult(orderInfo.id, capacityID))
+    }
+
+  }
 }
 
-class OrderStatusSummary(blockNo: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
+class OrderStatusSummary(blockNo: Int, daughterBoard: Int, testingBoard: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
+  val title = createTitleLabel()
+  val navigationButtons = createNavigationButtons()
+  val testSetting = createTestSetting()
+  val testControl = createTestControl()
+  val capacityBlock = createCapacityBlock()
+  val orderInfoHolder = TestSetting.db.getTestingOrderByBlock(daughterBoard, testingBoard)
 
-  println(TestSetting.db.getTables())
+  def createTitleLabel() = {
+    val title = new Label(this, SWT.NONE)
+    val titleLayoutData = new GridData
+    titleLayoutData.horizontalAlignment = GridData.CENTER
+    titleLayoutData.grabExcessHorizontalSpace = true
+    titleLayoutData.horizontalSpan = 2
+    title.setLayoutData(titleLayoutData)
+    title.setText(s"電容測試（區域 $blockNo）")
+    title
+  }
+
+  def createNavigationButtons() = {
+    val navigationButtons = new NavigationButtons(this)
+    val navigationButtonsLayoutData = new GridData
+    navigationButtonsLayoutData.heightHint = 50
+    navigationButtonsLayoutData.widthHint = 300
+    navigationButtonsLayoutData.horizontalAlignment = GridData.END
+    navigationButtonsLayoutData.grabExcessHorizontalSpace = true
+    navigationButtons.setLayoutData(navigationButtonsLayoutData)
+    navigationButtons
+  }
+
+  def createTestSetting() = {
+    val testSetting = new TestSetting(this)
+    val testSettingLayoutData = new GridData(GridData.FILL, GridData.FILL, true, false)
+    testSettingLayoutData.horizontalSpan = 2
+    testSetting.setLayoutData(testSettingLayoutData)
+    testSetting
+  }
+
+  def createTestControl() = {
+    val testControl = new TestControl(this)
+    val testControlLayoutData = new GridData(GridData.FILL, GridData.FILL, true, false)
+    testControl.setLayoutData(testControlLayoutData)
+    testControl
+  }
+
+  def createCapacityBlock() = {
+    val block = new CapacityBlock("測試狀態", this)
+    val blockLayoutData = new GridData
+    blockLayoutData.horizontalAlignment = GridData.FILL
+    blockLayoutData.grabExcessHorizontalSpace = true
+    blockLayoutData.verticalAlignment = GridData.FILL
+    blockLayoutData.grabExcessVerticalSpace = true
+    blockLayoutData.horizontalSpan = 3
+    block.setLayoutData(blockLayoutData)
+    block
+  }
 
   def init() {
+
+    println(orderInfoHolder)
 
     val gridLayout = new GridLayout(3, true)
 
@@ -201,40 +306,8 @@ class OrderStatusSummary(blockNo: Int, mainWindowShell: Shell) extends Composite
     gridLayout.marginHeight = 200
 
     this.setLayout(gridLayout)
-
-    val title = new Label(this, SWT.NONE)
-    val titleLayoutData = new GridData
-    titleLayoutData.horizontalAlignment = GridData.CENTER
-    titleLayoutData.grabExcessHorizontalSpace = true
-    titleLayoutData.horizontalSpan = 2
-    title.setLayoutData(titleLayoutData)
-    title.setText(s"電容測試（區域 $blockNo）")
-
-    val navigationButtons = new NavigationButtons(this)
-    val navigationButtonsLayoutData = new GridData
-    navigationButtonsLayoutData.heightHint = 50
-    navigationButtonsLayoutData.widthHint = 300
-    navigationButtonsLayoutData.horizontalAlignment = GridData.END
-    navigationButtonsLayoutData.grabExcessHorizontalSpace = true
-    navigationButtons.setLayoutData(navigationButtonsLayoutData)
-
-    val testSetting = new TestSetting(this)
-    val testSettingLayoutData = new GridData(GridData.FILL, GridData.FILL, true, false)
-    testSettingLayoutData.horizontalSpan = 2
-    testSetting.setLayoutData(testSettingLayoutData)
-
-    val testControl = new TestControl(this)
-    val testControlLayoutData = new GridData(GridData.FILL, GridData.FILL, true, false)
-    testControl.setLayoutData(testControlLayoutData)
-   
-    val loadBlock = new CapacityBlock("測試狀態", this)
-    val loadBlockLayoutData = new GridData
-    loadBlockLayoutData.horizontalAlignment = GridData.FILL
-    loadBlockLayoutData.grabExcessHorizontalSpace = true
-    loadBlockLayoutData.verticalAlignment = GridData.FILL
-    loadBlockLayoutData.grabExcessVerticalSpace = true
-    loadBlockLayoutData.horizontalSpan = 3
-    loadBlock.setLayoutData(loadBlockLayoutData)
+    testSetting.updateSettingInfo(orderInfoHolder)
+    capacityBlock.updateCapacityInfo(orderInfoHolder)
   }
 
   init()

@@ -11,18 +11,21 @@ import java.util.concurrent._
 
 class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
-  class AreaInfo(parent: Composite, areaNumber: Int, daughterBoard: Int, testBoard: Int, hasInfo: Boolean) extends Composite(parent, SWT.NONE) {
+  class AreaInfo(parent: Composite, areaNumber: Int, 
+                 daughterBoard: Int, testingBoard: Int, hasInfo: Boolean) extends Composite(parent, SWT.NONE) {
 
     var orderInfoHolder: Option[TestingOrder] = None
     val areaButton = createButton
     val (partNo, okCount, testedTime, status) = createInfoBox
     val gridLayout = new GridLayout(1, true)
-    this.setLayout(gridLayout)
 
-    updateAreaInfo()
+    def init() {
+      this.setLayout(gridLayout)
+      updateAreaInfo()
+    }
 
     def updateAreaInfo() {
-      this.orderInfoHolder = TestSetting.db.getTestingOrderByBlock(daughterBoard, testBoard)
+      this.orderInfoHolder = TestSetting.db.getTestingOrderByBlock(daughterBoard, testingBoard)
 
 
       orderInfoHolder.foreach { orderInfo =>
@@ -85,12 +88,13 @@ class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, S
       areaButton.addSelectionListener(new SelectionAdapter() {
         override def widgetSelected(e: SelectionEvent) {
           MainWindow.appendLog(s"點選「${areaButton.getText}」")
-          MainWindow.pushComposite(new OrderStatusSummary(areaNumber, mainWindowShell))
+          MainWindow.pushComposite(new OrderStatusSummary(areaNumber, daughterBoard, testingBoard, mainWindowShell))
         }
       })
   
       (partNo, okCount, testedTime, status)
     }
+    init()
   }
 
   val scheduler = new ScheduledThreadPoolExecutor(1)
@@ -142,15 +146,12 @@ class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, S
 
     areas.foreach(_.setLayoutData(createGridData))
     val updater = new Runnable() {
-      var count = 0
       override def run() {
-        println(s"=====> Update AreaInfo in Monitor: $count")
         Display.getDefault.asyncExec(new Runnable() {
           override def run() {
             areas.foreach(_.updateAreaInfo())
           }
         })
-        count+=1
       }
     }
 
@@ -160,7 +161,6 @@ class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, S
   
   this.addDisposeListener(new DisposeListener() {
     override def widgetDisposed(event: DisposeEvent) {
-      println("Disposed....")
       scheduledUpdate.cancel(false)
       scheduler.shutdown()
     }

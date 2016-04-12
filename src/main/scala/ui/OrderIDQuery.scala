@@ -58,7 +58,7 @@ class OrderIDQuery(mainWindowShell: Shell) extends Composite(mainWindowShell, SW
           messageBox.setMessage("系統中無此訂單編號的資料，請確認後重新輸入查詢")
           messageBox.open()
         } else {
-          MainWindow.pushComposite(new OrderStatusSummary(-1, MainWindow.mainWindowShell))
+          MainWindow.pushComposite(new OrderStatusSummary(-1, -1, -1, MainWindow.mainWindowShell))
         }
 
       }
