@@ -1,24 +1,43 @@
 package tw.com.zhenhai.lifetest;
 
+import zhenhai.lifetest.controller.model._
+
 import org.eclipse.swt._
 import org.eclipse.swt.widgets._
 import org.eclipse.swt.layout._
 import org.eclipse.swt.events._
 
+import java.util.concurrent._
+
 class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
   class AreaInfo(parent: Composite, areaNumber: Int, daughterBoard: Int, testBoard: Int, hasInfo: Boolean) extends Composite(parent, SWT.NONE) {
 
-    val orderInfoHolder = TestSetting.db.getTestingOrderByBlock(daughterBoard, testBoard)
+    var orderInfoHolder: Option[TestingOrder] = None
     val areaButton = createButton
-    val areaInfoBox = createInfoBox
+    val (partNo, okCount, testedTime, status) = createInfoBox
     val gridLayout = new GridLayout(1, true)
-  
     this.setLayout(gridLayout)
 
-    println("======= Area " + areaNumber + " ==========")
-    println(orderInfoHolder)
-    println("========================================")
+    updateAreaInfo()
+
+    def updateAreaInfo() {
+      this.orderInfoHolder = TestSetting.db.getTestingOrderByBlock(daughterBoard, testBoard)
+
+
+      orderInfoHolder.foreach { orderInfo =>
+        val goodCount = TestSetting.db.getGoodCount(orderInfo.id)
+        val isNotDisposed = !partNo.isDisposed && !okCount.isDisposed && !testedTime.isDisposed && !status.isDisposed
+
+        if (isNotDisposed) {
+          partNo.setText(orderInfo.partNo)
+          okCount.setText(goodCount.toString)
+          testedTime.setText(orderInfo.duration)
+          status.setText(orderInfo.currentStatus.toString)
+        }
+      }
+
+    }
 
     def createButton = {
       val areaButton = new Button(this, SWT.PUSH)
@@ -62,15 +81,6 @@ class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, S
       okCount.setLayoutData(new GridData(GridData.FILL, GridData.BEGINNING, true, false))
       testedTime.setLayoutData(new GridData(GridData.FILL, GridData.BEGINNING, true, false))
       status.setLayoutData(new GridData(GridData.FILL, GridData.BEGINNING, true, false))
-
-      orderInfoHolder.foreach { orderInfo =>
-        val goodCount = TestSetting.db.getGoodCount(orderInfo.id)
-        partNo.setText(orderInfo.partNo)
-        okCount.setText(goodCount.toString)
-        testedTime.setText(orderInfo.duration)
-        status.setText(orderInfo.currentStatus.toString)
-      }
-
   
       areaButton.addSelectionListener(new SelectionAdapter() {
         override def widgetSelected(e: SelectionEvent) {
@@ -79,11 +89,14 @@ class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, S
         }
       })
   
-      areaInfoGroup
+      (partNo, okCount, testedTime, status)
     }
   }
 
-  def init() {
+  val scheduler = new ScheduledThreadPoolExecutor(1)
+  val scheduledUpdate = initWindowAndScheduleUpdate()
+
+  def initWindowAndScheduleUpdate() = {
 
     val gridLayout = new GridLayout(6, true)
 
@@ -128,8 +141,30 @@ class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     } 
 
     areas.foreach(_.setLayoutData(createGridData))
-  }
+    val updater = new Runnable() {
+      var count = 0
+      override def run() {
+        println(s"=====> Update AreaInfo in Monitor: $count")
+        Display.getDefault.asyncExec(new Runnable() {
+          override def run() {
+            areas.foreach(_.updateAreaInfo())
+          }
+        })
+        count+=1
+      }
+    }
 
-  init()
+    scheduler.scheduleWithFixedDelay(updater, 0, 1, TimeUnit.SECONDS)
+
+  }
+  
+  this.addDisposeListener(new DisposeListener() {
+    override def widgetDisposed(event: DisposeEvent) {
+      println("Disposed....")
+      scheduledUpdate.cancel(false)
+      scheduler.shutdown()
+    }
+  })
+
 }
 
