@@ -79,7 +79,7 @@ class TextEntryField(title: String, isReadOnly: Boolean, isEqualWidth: Boolean, 
   }
 }
 
-class TestControl(parent: OrderStatusSummary) extends Composite(parent, SWT.NONE) {
+class TestControl(orderStatusSummary: OrderStatusSummary) extends Composite(orderStatusSummary, SWT.NONE) {
 
   var orderInfoHolder: Option[TestingOrder] = None
   val groupFrame = new Group(this, SWT.SHADOW_ETCHED_IN)
@@ -108,18 +108,156 @@ class TestControl(parent: OrderStatusSummary) extends Composite(parent, SWT.NONE
     dateTimeEntry
   }
 
+  class RoomTemperatureTestingDialog(parent: Shell, style: Int) extends Dialog(parent, style) {
+
+    var orderInfoHolder: Option[TestingOrder] = None
+    var hasMessageBox: Boolean = false
+    val scheduler = new ScheduledThreadPoolExecutor(1)
+    val shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL)
+    def this(parent: Shell) = this(parent, SWT.NONE)
+
+    def showMessageBox(message: String, style: Int) = {
+      hasMessageBox = true
+      val messageBox = new MessageBox(shell, style)
+      messageBox.setMessage(message)
+      val responseCode = messageBox.open()
+      hasMessageBox = false
+      responseCode
+    }
+
+    def startTestingSequence() {
+      this.orderInfoHolder = orderStatusSummary.getOrCreateOrder()
+      this.orderInfoHolder match {
+        case None => 
+          showMessageBox("無法儲存新測試至資料庫", SWT.OK)
+          shell.dispose()
+        case Some(newOrder) =>       
+          orderStatusSummary.isNewOrder = false
+          orderStatusSummary.updateInfo()
+          TestSetting.db.insertRoomTemperatureTestingQueue(newOrder.id)
+      }
+    }
+
+    def abortRoomTemperatureTest() {
+      this.orderInfoHolder.foreach { orderInfo =>
+        TestSetting.db.deleteTemperatureTest(orderInfo.id)
+      }
+    }
+
+    val updater = new Runnable() {
+      var count = 0L
+      override def run() {
+        for {
+          orderInfo <- orderInfoHolder
+          queueData <- TestSetting.db.getRoomTemperatureTestingQueue(orderInfo.id)
+        } {
+          val currentStatus = queueData.currentStatus
+
+          // 已完成測試
+          if (currentStatus == 7) {
+            shell.getDisplay.asyncExec(new Runnable() {
+              override def run() {
+                if (!hasMessageBox && !shell.isDisposed) {
+                  showMessageBox("已完成室溫初始測試", SWT.OK)
+                  shell.dispose()
+                }
+              }
+            })
+          }
+
+          // 發生錯誤
+          if (currentStatus >= 2 && currentStatus <= 6) {
+            val message = currentStatus match {
+              case 2 => "資料庫中找不到測試單，系統異常，請連絡技術人員。"
+              case 3 => "烤箱板高壓 Relay 損換，請更換烤箱板。"
+              case 4 => "找不到測試板，請確認是否已連接後重試。"
+              case 5 => "主板 RS232 回應逾時。"
+              case 6 => "發生其他異常錯誤，請連絡技述人員。"
+            }
+
+            shell.getDisplay.asyncExec(new Runnable() {
+              override def run() {
+                if (!hasMessageBox && !shell.isDisposed) {
+
+                  val responseCode = showMessageBox(message, SWT.RETRY|SWT.CANCEL)
+                  if (responseCode == SWT.CANCEL) {
+                    abortRoomTemperatureTest()
+                    shell.dispose()           
+                  } else {
+                    TestSetting.db.updateRoomTemperatureTestingQueue(queueData.copy(currentStatus = 0))
+                  }
+                }
+              }
+            })
+          }
+        }
+        count += 1
+      }
+    }
+
+    def open() = {
+      import org.eclipse.swt.graphics.Font
+      val parent = getParent()
+      val scheduledTask = scheduler.scheduleWithFixedDelay(updater, 0, 250, TimeUnit.MILLISECONDS)
+      val label = new Label(shell, SWT.NONE)
+
+      val layout = new FillLayout
+      layout.marginWidth = 30
+      layout.marginHeight = 30
+      shell.setText("室溫測試中")
+      label.setText("室溫初始測試進行中，請稍候……")
+
+      val fontData = label.getFont().getFontData()(0)
+      fontData.setHeight(30)
+      label.setFont( new Font(shell.getDisplay,fontData))
+      shell.setLayout(layout)
+      shell.pack()
+      shell.open()
+      shell.addShellListener(new ShellAdapter() {
+        override def shellClosed(e: ShellEvent) {
+          e.doit = false
+        }
+      })
+
+      startTestingSequence()
+
+      val display = parent.getDisplay()
+      while (!shell.isDisposed()) {
+        if (!display.readAndDispatch()) {
+	  display.sleep()
+        }
+      }
+      scheduledTask.cancel(false)
+      scheduler.shutdown()
+    }
+    
+  }
+
+  def startRoomTemperatureTest() {
+    val dialog = new RoomTemperatureTestingDialog(getShell, SWT.APPLICATION_MODAL)
+    dialog.open()
+  }
+
   def init() {
     this.setLayout(new FillLayout)
     groupFrame.setLayout(new GridLayout(6, true))
     groupFrame.setText("測試控制")
+    startOvenTestButton.setEnabled(false)
+    stopTestButton.setEnabled(false)
 
     startRoomTemperatureTestButton.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(e: SelectionEvent) {
-        println("====> 按下室溫測試按鈕")
-
-        val settingErrors = parent.testSetting.getSettingErrors
+        val settingErrors = orderStatusSummary.testSetting.getSettingErrors
 
         if (settingErrors.isEmpty) {
+
+          val confirmBox = new MessageBox(TestControl.this.getShell, SWT.ICON_INFORMATION|SWT.OK|SWT.CANCEL)
+          confirmBox.setMessage("請將測試板插入室溫測試專用插槽中後按下確認按鈕。")
+          confirmBox.open() match {
+            case SWT.CANCEL => println("取消……")
+            case SWT.OK => startRoomTemperatureTest()
+          }
+          
         } else {
           val messages = settingErrors.mkString("\n")
           val messageBox = new MessageBox(TestControl.this.getShell, SWT.ICON_WARNING|SWT.OK)
@@ -160,9 +298,10 @@ class TestControl(parent: OrderStatusSummary) extends Composite(parent, SWT.NONE
       if (!isDisposed) {
       
         if (!orderInfo.isRoomTemperatureTested) {
-          startRoomTemperatureTestButton.setEnabled(true)
+          val shouldEnableStopRTButton = orderInfo.currentStatus != 6 && orderInfo.currentStatus != 7
+          startRoomTemperatureTestButton.setEnabled(shouldEnableStopRTButton)
           startOvenTestButton.setEnabled(false)
-          stopTestButton.setEnabled(false)
+          stopTestButton.setEnabled(shouldEnableStopRTButton)
         } else {
           startRoomTemperatureTestButton.setEnabled(false)
           val shouldEnableOvenTestButton = orderInfo.currentStatus == 0
@@ -192,6 +331,7 @@ class TestControl(parent: OrderStatusSummary) extends Composite(parent, SWT.NONE
 
 
 class TestSetting(parent: OrderStatusSummary) extends Composite(parent, SWT.NONE) {
+
   val groupFrame = new Group(this, SWT.SHADOW_ETCHED_IN)
   val partNoEntry = new TextEntryField("料　　號：", false, false, groupFrame)
   val voltage = new DropdownField("電壓設定：", TestSetting.voltageList, groupFrame)
@@ -201,6 +341,21 @@ class TestSetting(parent: OrderStatusSummary) extends Composite(parent, SWT.NONE
   val testingInterval = new DropdownField("測試間隔：", TestSetting.intervalList, groupFrame)
   val marginOfError = new DropdownField("誤 差 值：", TestSetting.marginOfErrorList, groupFrame)
   val dx = new DropdownField("損 失 角：", TestSetting.dxList, groupFrame)
+
+  def createNewOrder() = {
+    TestSetting.db.insertNewTestingOrder(
+      partNoEntry.getText,
+      capacity.getText.toDouble,
+      voltage.getText.toDouble,
+      leakCurrent.getText,
+      dx.getText.toDouble,
+      marginOfError.getText.charAt(0).toString,
+      testingTime.getText.toInt,
+      testingInterval.getText.toInt,
+      parent.daughterBoard,
+      parent.testingBoard
+    )
+  }
 
   def init() {
     this.setLayout(new FillLayout)
@@ -226,6 +381,7 @@ class TestSetting(parent: OrderStatusSummary) extends Composite(parent, SWT.NONE
     this.testingInterval.deselectAll()
     this.marginOfError.deselectAll()
     this.dx.deselectAll()
+    this.setEnabled(true)
   }
 
   def updateSettingInfo(testingOrderHolder: Option[TestingOrder]) {
@@ -286,7 +442,6 @@ class TestSetting(parent: OrderStatusSummary) extends Composite(parent, SWT.NONE
       result ::= " - 未設定損失角"
     }
 
-    println("====> parent.daughterBoard:" + parent.daughterBoard)
     val currentVoltageSettingHolder = TestSetting.db.getVoltageSetting(parent.daughterBoard)
 
     for {
@@ -297,9 +452,6 @@ class TestSetting(parent: OrderStatusSummary) extends Composite(parent, SWT.NONE
         result ::= s" - 電壓設定需與同一子板的測試相同（$currentVoltageSetting）"
       }
     }
-
-    println("===> currentVoltage:" + TestSetting.db.getVoltageSetting(parent.daughterBoard))
-    println("===> setVoltage" + voltage.getText)
 
     result.reverse
 
@@ -448,7 +600,7 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
 }
 
 class OrderStatusSummary(var isNewOrder: Boolean, blockNo: Int, val daughterBoard: Int, 
-                         testingBoard: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
+                         val testingBoard: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
   var orderInfoHolder: Option[TestingOrder] = None
 
@@ -459,6 +611,8 @@ class OrderStatusSummary(var isNewOrder: Boolean, blockNo: Int, val daughterBoar
   val testSetting = createTestSetting()
   val testControl = createTestControl()
   val capacityBlock = createCapacityBlock()
+
+  def getOrCreateOrder() = orderInfoHolder orElse testSetting.createNewOrder()
 
   def createComposite() = {
     val composite = new Composite(this, SWT.NONE)
@@ -480,6 +634,14 @@ class OrderStatusSummary(var isNewOrder: Boolean, blockNo: Int, val daughterBoar
     }
   }
 
+  def clear() {
+    OrderStatusSummary.this.isNewOrder = true
+    testControl.clear()
+    testSetting.clear()
+    capacityBlock.clear()
+    testSetting.setEnabled(true)
+  }
+
   def createNewOrderButton() = {
     val isTestStopped = orderInfoHolder.map(info => info.currentStatus == 6 || info.currentStatus == 7).getOrElse(false)
     val newOrderButton = new Button(composite, SWT.PUSH)
@@ -494,11 +656,7 @@ class OrderStatusSummary(var isNewOrder: Boolean, blockNo: Int, val daughterBoar
     newOrderButton.setText("新測試")
     newOrderButton.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(e: SelectionEvent) {
-        OrderStatusSummary.this.isNewOrder = true
-        testControl.clear()
-        testSetting.clear()
-        capacityBlock.clear()
-        testSetting.setEnabled(true)
+        clear()
       }
     })
     newOrderButton
@@ -554,11 +712,13 @@ class OrderStatusSummary(var isNewOrder: Boolean, blockNo: Int, val daughterBoar
   }
 
   def updateInfo() {
-    orderInfoHolder = TestSetting.db.getTestingOrderByBlock(daughterBoard, testingBoard)
-    updateNewOrderButtonStatus()
-    testSetting.updateSettingInfo(orderInfoHolder)
-    capacityBlock.updateCapacityInfo(orderInfoHolder)
-    testControl.updateController(orderInfoHolder)
+    if (!isNewOrder) {
+      orderInfoHolder = TestSetting.db.getTestingOrderByBlock(daughterBoard, testingBoard)
+      updateNewOrderButtonStatus()
+      testSetting.updateSettingInfo(orderInfoHolder)
+      capacityBlock.updateCapacityInfo(orderInfoHolder)
+      testControl.updateController(orderInfoHolder)
+    }
   }
 
   val scheduler = new ScheduledThreadPoolExecutor(1)
@@ -580,9 +740,7 @@ class OrderStatusSummary(var isNewOrder: Boolean, blockNo: Int, val daughterBoar
       def run() { 
         Display.getDefault.asyncExec(new Runnable() {
           override def run() {
-            if (!isNewOrder) {
-              updateInfo()
-            }
+            updateInfo()
           }
         })
       } 

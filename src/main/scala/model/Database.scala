@@ -63,6 +63,37 @@ class Database(filename: String) {
     }
   }
 
+  def insertRoomTemperatureTestingQueue(testingID: Long) {
+    var resultList: List[RoomTemperatureTestingQueue] = Nil
+    val statement = connection.prepareStatement(
+      "INSERT INTO RoomTemperatureTestingQueue VALUES(?, ?, 0)"
+    )
+    statement.setLong(1, testingID)
+    statement.setLong(2, System.currentTimeMillis)
+    statement.executeUpdate()
+  }
+
+  def getRoomTemperatureTestingQueue(testingID: Long): Option[RoomTemperatureTestingQueue] = {
+    var resultList: List[RoomTemperatureTestingQueue] = Nil
+    val statement = connection.prepareStatement(
+      """SELECT testingID, insertTime, currentStatus FROM RoomTemperatureTestingQueue WHERE testingID=?"""
+    )
+    statement.setLong(1, testingID)
+    val cursor = statement.executeQuery()
+    while (cursor.next()) {
+      resultList ::= RoomTemperatureTestingQueue(
+        cursor.getLong(1),
+        cursor.getLong(2),
+        cursor.getInt(3)
+      )
+    }
+
+    cursor.close()
+    statement.close()
+
+    resultList.headOption
+  }
+
   /**
    *  取得室溫測試佇列中時間最近的一筆資料
    *
@@ -287,6 +318,24 @@ class Database(filename: String) {
   def deleteOvenTestingQueue(testingID: Long) {
     val statement = connection.prepareStatement(
       "DELETE FROM OvenTestingQueue WHERE testingID=?"
+    )
+    statement.setLong(1, testingID)
+    statement.executeUpdate()
+    statement.close()
+  }
+
+  def deleteTestingOrder(testingID: Long) {
+    val statement = connection.prepareStatement(
+      "DELETE FROM TestingOrder WHERE id=?"
+    )
+    statement.setLong(1, testingID)
+    statement.executeUpdate()
+    statement.close()
+  }
+
+  def deleteTemperatureTest(testingID: Long) {
+    val statement = connection.prepareStatement(
+      "DELETE FROM RoomTemperatureTestingQueue WHERE testingID=?"
     )
     statement.setLong(1, testingID)
     statement.executeUpdate()
@@ -562,6 +611,7 @@ class Database(filename: String) {
     statement.close()
   }
 
+
   def getTestingOrderByBlock(daughterBoard: Int, testBoard: Int): Option[TestingOrder] = {
     var result: List[TestingOrder] = Nil
     val statement = connection.prepareStatement(
@@ -659,6 +709,24 @@ class Database(filename: String) {
     cursor.close()
     statement.close()
     result
+  }
+
+  def insertNewTestingOrder(partNo: String, capacity: Double, voltage: Double, leakCurrent: String, dxValue: Double, marginOfError: String, testingTime: Int, testingInterval: Int, daughterBoard: Int, testingBoard: Int) = {
+    val statement = connection.prepareStatement(
+      "INSERT INTO TestingOrder VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, 0, 0)"
+    )
+    statement.setString(1, partNo)
+    statement.setDouble(2, capacity)
+    statement.setDouble(3, voltage)
+    statement.setString(4, leakCurrent)
+    statement.setDouble(5, dxValue)
+    statement.setString(6, marginOfError)
+    statement.setInt(7, testingTime)
+    statement.setInt(8, testingInterval)
+    statement.setInt(9, daughterBoard)
+    statement.setInt(10, testingBoard)
+    statement.executeUpdate()
+    getTestingOrderByBlock(daughterBoard, testingBoard)
   }
 
   initDB()

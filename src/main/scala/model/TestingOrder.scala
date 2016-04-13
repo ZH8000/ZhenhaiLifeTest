@@ -47,19 +47,23 @@ case class TestingOrder(
   isRoomTemperatureTested: Boolean
 ) {
   val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
-  val timeFormatter = new SimpleDateFormat("HH:mm:ss")
+  val timeFormatter = new SimpleDateFormat("mm:HH:ss")
 
   def formattedStartDate = {
+
     currentStatus match {
-      case 0 if isRoomTemperatureTested  => "尚未執行室溫測試"
-      case 0 if !isRoomTemperatureTested => "室溫測試完畢"
+      case 0 if !isRoomTemperatureTested => "尚未進行室溫測試"
+      case 0 if isRoomTemperatureTested  => "尚未啟動烤箱測試"
+      case _ if startTime == 0 => "尚未啟動烤箱測試"
       case _ => dateFormatter.format(new Date(startTime))
     }
   }
 
   def formattedStartTime = {
     currentStatus match {
-      case 0 if isRoomTemperatureTested  => "0"
+      case 0 if !isRoomTemperatureTested => "尚未進行室溫測試"
+      case 0 if isRoomTemperatureTested  => "尚未啟動烤箱測試"
+      case _ if startTime == 0 => "尚未啟動烤箱測試"
       case _ => timeFormatter.format(new Date(startTime))
     }
   }
@@ -81,8 +85,8 @@ case class TestingOrder(
 
   def duration = {
     currentStatus match {
-      case 0 if isRoomTemperatureTested  => "尚未執行室溫測試"
-      case 0 if !isRoomTemperatureTested => "室溫測試完畢"
+      case 0 if !isRoomTemperatureTested  => "尚未執行室溫測試"
+      case 0 if isRoomTemperatureTested => "尚未啟動烤箱測試"
       case 1|2|3|4|5 =>
         val durationInSeconds = (System.currentTimeMillis - startTime) / 1000
         LocalTime.ofSecondOfDay(durationInSeconds).toString
