@@ -1,6 +1,8 @@
 package zhenhai.lifetest.controller.model
 
 import java.time.LocalTime
+import java.text.SimpleDateFormat
+import java.util.Date
 
 /**
  *  測試單資料
@@ -33,7 +35,7 @@ import java.time.LocalTime
  *  @param  tbUUID                    測試板的 UUID
  *  @param  startTime                 測試開始時間
  *  @param  lastTestTime              最後一次測試的時間
- *  @param  currentStatus             目前的狀態(0 = 新加入 / 1 = 可執行烤箱測試)
+ *  @param  currentStatus             目前的狀態
  *  @param  isRoomTemperatureTested   是否已執行過室溫初始測試
  */
 case class TestingOrder(
@@ -44,11 +46,37 @@ case class TestingOrder(
   lastTestTime: Long, currentStatus: Int, 
   isRoomTemperatureTested: Boolean
 ) {
+  val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
+  val timeFormatter = new SimpleDateFormat("HH:mm:ss")
+
+  def formattedStartDate = {
+    currentStatus match {
+      case 0 if isRoomTemperatureTested  => "尚未執行室溫測試"
+      case 0 if !isRoomTemperatureTested => "室溫測試完畢"
+      case _ => dateFormatter.format(new Date(startTime))
+    }
+  }
+
+  def formattedStartTime = {
+    currentStatus match {
+      case 0 if isRoomTemperatureTested  => "0"
+      case _ => timeFormatter.format(new Date(startTime))
+    }
+  }
+
 
   def duration = {
-    val durationInSeconds = (lastTestTime - startTime) / 1000
-    LocalTime.ofSecondOfDay(durationInSeconds).toString
+    currentStatus match {
+      case 0 if isRoomTemperatureTested  => "尚未執行室溫測試"
+      case 0 if !isRoomTemperatureTested => "室溫測試完畢"
+      case 1|2|3|4|5 =>
+        val durationInSeconds = (System.currentTimeMillis - startTime) / 1000
+        LocalTime.ofSecondOfDay(durationInSeconds).toString
+      case 6|7 => 
+        val durationInSeconds = (lastTestTime - startTime) / 1000
+        LocalTime.ofSecondOfDay(durationInSeconds).toString
 
+    }
   }
 }
 

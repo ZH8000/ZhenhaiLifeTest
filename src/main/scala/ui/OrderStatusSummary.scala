@@ -72,6 +72,7 @@ class TextEntryField(title: String, isReadOnly: Boolean, isEqualWidth: Boolean, 
 
 class TestControl(parent: Composite) extends Composite(parent, SWT.NONE) {
 
+  var orderInfoHolder: Option[TestingOrder] = None
   val groupFrame = new Group(this, SWT.SHADOW_ETCHED_IN)
   val dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 
@@ -82,8 +83,9 @@ class TestControl(parent: Composite) extends Composite(parent, SWT.NONE) {
   val startRoomTemperatureTestButton = new Button(groupFrame, SWT.PUSH)
   val startOvenTestButton = new Button(groupFrame, SWT.PUSH)
   val stopTestButton = new Button(groupFrame, SWT.PUSH)
+  val startDate = new TextEntryField("開始日期：", true, false, groupFrame)
+  val testedTime = new TextEntryField("測試時間：", true, false, groupFrame)
   val startTime = new TextEntryField("開始時間：", true, false, groupFrame)
-  val stopTime = new TextEntryField("測試時間：", true, false, groupFrame)
 
   val buttonLayoutData1 = new GridData(SWT.FILL, SWT.FILL, true, true)
   val buttonLayoutData2 = new GridData(SWT.FILL, SWT.FILL, true, true)
@@ -92,10 +94,13 @@ class TestControl(parent: Composite) extends Composite(parent, SWT.NONE) {
   buttonLayoutData2.horizontalSpan = 2
   buttonLayoutData3.horizontalSpan = 2
 
-  val timeLayoutData1 = new GridData(SWT.FILL, SWT.FILL, true, true)
-  val timeLayoutData2 = new GridData(SWT.FILL, SWT.FILL, true, true)
+  val timeLayoutData1 = new GridData(SWT.FILL, SWT.FILL, true, false)
+  val timeLayoutData2 = new GridData(SWT.FILL, SWT.FILL, true, false)
+  val timeLayoutData3 = new GridData(SWT.FILL, SWT.FILL, true, false)
+
   timeLayoutData1.horizontalSpan = 3
   timeLayoutData2.horizontalSpan = 3
+  timeLayoutData3.horizontalSpan = 3
 
 
   startRoomTemperatureTestButton.setText("室溫測試")
@@ -107,12 +112,49 @@ class TestControl(parent: Composite) extends Composite(parent, SWT.NONE) {
   stopTestButton.setText("中止測試")
   stopTestButton.setLayoutData(buttonLayoutData3)
 
+  startDate.setLayoutData(timeLayoutData1)
+  testedTime.setLayoutData(timeLayoutData2)
   startTime.setLayoutData(timeLayoutData1)
-  stopTime.setLayoutData(timeLayoutData2)
+
+  stopTestButton.addSelectionListener(new SelectionAdapter() {
+    override def widgetSelected(e: SelectionEvent) {
+      orderInfoHolder.foreach { orderInfo => 
+        println("中止測試……")
+        TestSetting.db.abortTest(orderInfo.id) 
+        stopTestButton.setEnabled(false)
+      }
+    }
+  })
+
+  def updateController(orderInfoHolder: Option[TestingOrder]) {
+    this.orderInfoHolder = orderInfoHolder
+    updateTimeInfo(orderInfoHolder)
+    orderInfoHolder.foreach { orderInfo =>
+      
+      if (!orderInfo.isRoomTemperatureTested) {
+        startRoomTemperatureTestButton.setEnabled(true)
+        startOvenTestButton.setEnabled(false)
+        stopTestButton.setEnabled(false)
+      } else {
+        startRoomTemperatureTestButton.setEnabled(false)
+        val shouldEnableOvenTestButton = orderInfo.currentStatus == 0
+        val shouldEnableStopButton = orderInfo.currentStatus != 6 && orderInfo.currentStatus != 7
+        startOvenTestButton.setEnabled(shouldEnableOvenTestButton)
+        stopTestButton.setEnabled(shouldEnableStopButton)
+      }
+
+    }
+  }
 
   def updateTimeInfo(orderInfoHolder: Option[TestingOrder]) {
-
+    orderInfoHolder.foreach { orderInfo =>
+      startDate.setText(orderInfo.formattedStartDate)
+      startTime.setText(orderInfo.formattedStartTime)
+      testedTime.setText(orderInfo.duration)
+    }
   }
+
+
 }
 
 
@@ -354,6 +396,7 @@ class OrderStatusSummary(blockNo: Int, daughterBoard: Int, testingBoard: Int, ma
     this.setLayout(gridLayout)
     testSetting.updateSettingInfo(orderInfoHolder)
     capacityBlock.updateCapacityInfo(orderInfoHolder)
+    testControl.updateController(orderInfoHolder)
   }
 
   init()

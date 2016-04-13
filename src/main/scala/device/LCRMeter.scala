@@ -88,6 +88,7 @@ class LCRMeter(port: String, baudRate: Int = SerialPort.BAUDRATE_9600, waitForRe
     val Array(dxCoefficient, dxExp) = dx.split("E").map(_.toInt)
     val capacityValue = capacityCoefficient * BigDecimal(Math.pow(10, capacityExp)) * BigDecimal(Math.pow(10, 6))
     val dxValue = dxCoefficient * BigDecimal(Math.pow(10, dxExp))
+    println("LCRResult:" + line)
     LCRResult(capacityValue, capacityStatus, dxValue, dxStatus, totalStatus)
   }
 

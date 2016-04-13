@@ -635,6 +635,14 @@ class Database(filename: String) {
     result
   }
 
+  def abortTest(testingID: Long) {
+    val statement = connection.prepareStatement(
+      "UPDATE TestingOrder SET currentStatus=6 WHERE id=?"
+    )
+    statement.setLong(1, testingID)
+    statement.executeUpdate()
+  }
+
   initDB()
 
 }

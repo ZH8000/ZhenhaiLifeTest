@@ -9,8 +9,8 @@ case class PowerSupplyStatus(isOutput: Boolean, voltage: Double)
 
 object Main {
 
-  val mainBoardPort = "/dev/ttyUSB2"
-  val lcrMeterPort = "/dev/ttyUSB1"
+  val mainBoardPort = "/dev/ttyUSB1"
+  val lcrMeterPort = "/dev/ttyUSB2"
   val powerSuppliesPort: Map[Int, String] = Map.empty //(0 -> "/dev/ttyUSB3")
 
   val daughterBoardCount = 3    // 總共有幾組測試子板
@@ -43,14 +43,14 @@ object Main {
         println("  ==> 測試單：" + testingOrder)
 
         val initialCheckingAndUUID = for {
-          //powerSupply       <- Try(powerSupplies(testingOrder.daughterBoard))
-          isHVRelayOK       <- mainBoard.isHVRelayOK(testingOrder.daughterBoard, testingOrder.testingBoard) if isHVRelayOK
-          disableCharge     <- mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, false)
+          //powerSupply           <- Try(powerSupplies(testingOrder.daughterBoard))
+          isHVRelayOK            <- mainBoard.isHVRelayOK(testingOrder.daughterBoard, testingOrder.testingBoard) if isHVRelayOK
+          disableChargeDischarge <- mainBoard.setChargeMode(rtDaughterBoard, rtTestingBoard, 0)
           //setVoltage        <- powerSupply.setVoltage(testingOrder.voltage)
-          uuid              <- mainBoard.getUUID(0, 0)
-          enableCharge      <- mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, true)
-          disableLCRChannel <- mainBoard.setLCRChannel(testingOrder.daughterBoard, testingOrder.testingBoard, 0)
-          disableLCChannel  <- mainBoard.setLCChannel(testingOrder.daughterBoard, testingOrder.testingBoard, 0)
+          uuid                   <- mainBoard.getUUID(0, 0)
+          enableCharge           <- mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, 1)
+          disableLCRChannel      <- mainBoard.setLCRChannel(testingOrder.daughterBoard, testingOrder.testingBoard, 0)
+          disableLCChannel       <- mainBoard.setLCChannel(testingOrder.daughterBoard, testingOrder.testingBoard, 0)
         } yield (uuid, null)//, powerSupply)
 
         initialCheckingAndUUID match {
@@ -142,10 +142,12 @@ object Main {
         println("  ==> 測試單：" + testingOrder)
 
         val initialCheckingAndUUID = for {
-          isHVRelayOK   <- mainBoard.isHVRelayOK(rtDaughterBoard, rtTestingBoard) if isHVRelayOK
-          disableCharge <- mainBoard.setChargeMode(rtDaughterBoard, rtTestingBoard, false)
+          isHVRelayOK            <- mainBoard.isHVRelayOK(rtDaughterBoard, rtTestingBoard) if isHVRelayOK
+          disableChargeDischarge <- mainBoard.setChargeMode(rtDaughterBoard, rtTestingBoard, 0)
           uuid <- mainBoard.getUUID(0, 0)
         } yield uuid
+
+        println("  ==> " + initialCheckingAndUUID)
 
         initialCheckingAndUUID match {
           case Failure(e: NoSuchElementException) => db.updateRoomTemperatureTestingQueue(request.copy(currentStatus = 3))
@@ -179,9 +181,10 @@ object Main {
         db.updateTestingOrder(testingOrder.copy(lastTestTime = System.currentTimeMillis, currentStatus = 1))
 
         val initialCheckingAndUUID = for {
-          isHVRelayOK   <- mainBoard.isHVRelayOK(testingOrder.daughterBoard, testingOrder.testingBoard) if isHVRelayOK
-          disableCharge <- mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, false, 10)
-          uuid          <- mainBoard.getUUID(0, 0)
+          isHVRelayOK     <- mainBoard.isHVRelayOK(testingOrder.daughterBoard, testingOrder.testingBoard) if isHVRelayOK
+          enableDischarge <- mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, 2, 10)
+          disableChargeDischarge <- mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, 0)
+          uuid            <- mainBoard.getUUID(0, 0)
         } yield uuid
 
         println(initialCheckingAndUUID)
@@ -194,7 +197,7 @@ object Main {
           case Success(uuid) if uuid != testingOrder.tbUUID => db.updateTestingOrder(testingOrder.copy(currentStatus = 6))
           case Success(uuid) => 
             startLCRMeasurement(testingOrder, false)
-            mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, true)
+            mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, 1)
         }
 
         db.deleteOvenTestingQueue(request.testingID)
@@ -318,7 +321,9 @@ object Main {
 
     while(true) {
 
-      println(s"==> 進入主迴圈[$count]")
+      if (count % 100 == 0) {
+        println(s"==> 進入主迴圈[${count / 100}]")
+      }
 
       val ovenUUIDCheckingRequest = db.getOvenUUIDCheckingQueue
       val roomTemperatureTestingRequest = db.getRoomTemperatureTestingQueue

@@ -48,12 +48,11 @@ class MainBoard(port: String, baudRate: Int = SerialPort.BAUDRATE_9600, waitForR
     getResponse.map(_ == s"#$daughterBoard#$testBoard#d#1#")
   }
 
-  def setChargeMode(daughterBoard: Int, testBoard: Int, isInChargeMode: Boolean, waitAfterDischarge: Int = 0): Try[Boolean] = {
-    val modeCode = if (isInChargeMode) "1" else "0"
-    val command = "$" + daughterBoard + "$" + testBoard + "$c$" + modeCode + "$"
+  def setChargeMode(daughterBoard: Int, testBoard: Int, chargeMode: Int, waitAfterDischarge: Int = 0): Try[Boolean] = {
+    val command = "$" + daughterBoard + "$" + testBoard + "$c$" + chargeMode + "$"
     sendCommand(command)
     val result = getResponse.map(line => line == command.replace("$", "#"))
-    if (result.isSuccess && isInChargeMode == false) {
+    if (result.isSuccess) {
       Thread.sleep(waitAfterDischarge * 1000)
     }
     result
@@ -62,7 +61,11 @@ class MainBoard(port: String, baudRate: Int = SerialPort.BAUDRATE_9600, waitForR
   def setLCRChannel(daughterBoard: Int, testBoard: Int, capacityNumber: Int): Try[Boolean] = {
     val command = "$" + daughterBoard + "$" + testBoard + "$a$" + "%x".format(capacityNumber) + "$"
     sendCommand(command)
-    getResponse.map(_ == command.replace("$", "#"))
+    val result = getResponse.map(_ == command.replace("$", "#"))
+    if (result.isSuccess) {
+      Thread.sleep(1000)
+    }
+    result
   }
 
   def setLCChannel(daughterBoard: Int, testBoard: Int, capacityNumber: Int): Try[Boolean] = {
