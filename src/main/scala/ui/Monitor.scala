@@ -88,7 +88,7 @@ class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, S
       areaButton.addSelectionListener(new SelectionAdapter() {
         override def widgetSelected(e: SelectionEvent) {
           MainWindow.appendLog(s"點選「${areaButton.getText}」")
-          MainWindow.pushComposite(new OrderStatusSummary(areaNumber, daughterBoard, testingBoard, mainWindowShell))
+          MainWindow.pushComposite(new OrderStatusSummary(orderInfoHolder.isEmpty, areaNumber, daughterBoard, testingBoard, mainWindowShell))
         }
       })
   

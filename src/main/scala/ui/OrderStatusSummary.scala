@@ -45,6 +45,9 @@ class DropdownField[T](title: String, selection: List[T], parent: Composite) ext
   combo.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true , false))
   selection.foreach { item => combo.add(item.toString) }
 
+  def deselectAll() {
+    combo.deselectAll()
+  }
   def setText(text: String) {
     combo.setText(text)
   }
@@ -120,12 +123,20 @@ class TestControl(parent: Composite) extends Composite(parent, SWT.NONE) {
   stopTestButton.addSelectionListener(new SelectionAdapter() {
     override def widgetSelected(e: SelectionEvent) {
       orderInfoHolder.foreach { orderInfo => 
-        println("中止測試……")
         TestSetting.db.abortTest(orderInfo.id) 
         stopTestButton.setEnabled(false)
       }
     }
   })
+
+  def clear() {
+    startDate.setText("")
+    startTime.setText("")
+    testedTime.setText("")
+    stopTestButton.setEnabled(false)
+    startOvenTestButton.setEnabled(false)
+    startRoomTemperatureTestButton.setEnabled(true)
+  }
 
   def updateController(orderInfoHolder: Option[TestingOrder]) {
     this.orderInfoHolder = orderInfoHolder
@@ -190,6 +201,17 @@ class TestSetting(parent: Composite) extends Composite(parent, SWT.NONE) {
   marginOfError.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
   dx.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
 
+  def clear() {
+    this.partNoEntry.setText("")
+    this.voltage.deselectAll()
+    this.testingTime.deselectAll()
+    this.capacity.deselectAll()
+    this.leakCurrent.deselectAll()
+    this.testingInterval.deselectAll()
+    this.marginOfError.deselectAll()
+    this.dx.deselectAll()
+  }
+
   def updateSettingInfo(testingOrderHolder: Option[TestingOrder]) {
 
     val isDisposed = partNoEntry.isDisposed || voltage.isDisposed || testingTime.isDisposed || capacity.isDisposed || leakCurrent.isDisposed || testingInterval.isDisposed || marginOfError.isDisposed || dx.isDisposed
@@ -197,15 +219,7 @@ class TestSetting(parent: Composite) extends Composite(parent, SWT.NONE) {
     if (!isDisposed) {
 
       testingOrderHolder match {
-        case None =>
-          this.partNoEntry.setText("")
-          this.voltage.setText("")
-          this.testingTime.setText("")
-          this.capacity.setText("")
-          this.leakCurrent.setText("")
-          this.testingInterval.setText("")
-          this.marginOfError.setText("")
-          this.dx.setText("")
+        case None => clear()
         case Some(testingOrder) =>
           this.setEnabled(false)
           this.partNoEntry.setText(testingOrder.partNo)
@@ -223,12 +237,12 @@ class TestSetting(parent: Composite) extends Composite(parent, SWT.NONE) {
 
 class CapacityBlock(title: String, parent: Composite) extends Composite(parent, SWT.NONE) {
 
-  class CapacityButton(title: String, parent: Composite) extends Composite(parent, SWT.NONE) {
+  class CapacityInfo(title: String, parent: Composite) extends Composite(parent, SWT.NONE) {
+
+    val greenColor = Display.getCurrent.getSystemColor(SWT.COLOR_GREEN)
+    val redColor = Display.getCurrent.getSystemColor(SWT.COLOR_RED)
 
     val gridLayout = new GridLayout(2, false)
-    gridLayout.verticalSpacing = 2
-    this.setLayout(gridLayout)
-
     val titleButton = createTitleButton(title)
 
     val capacityInfo = new TextEntryField("電容值：", true, false, this)
@@ -239,11 +253,16 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
     val leakCurrentStatusLabel = new Label(this, SWT.NONE)
 
     val titleButtonLayoutData = new GridData(SWT.FILL, SWT.FILL, true, true)
-    titleButtonLayoutData.horizontalSpan = 2
-    titleButton.setLayoutData(titleButtonLayoutData)
-    capacityInfo.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false))
-    dxValueInfo.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false))
-    leakCurrentInfo.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false))
+
+    def init() {
+      gridLayout.verticalSpacing = 2
+      this.setLayout(gridLayout)
+      titleButtonLayoutData.horizontalSpan = 2
+      titleButton.setLayoutData(titleButtonLayoutData)
+      capacityInfo.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false))
+      dxValueInfo.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false))
+      leakCurrentInfo.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false))
+    }
 
     def createTitleButton(title: String) = {
       val button = new Button(this, SWT.PUSH)
@@ -264,15 +283,21 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
       button
     }
 
-    val greenColor = Display.getCurrent.getSystemColor(SWT.COLOR_GREEN)
-    val redColor = Display.getCurrent.getSystemColor(SWT.COLOR_RED)
+    def clear() {
+      capacityInfo.setText("")
+      dxValueInfo.setText("")
+      capacityStatusLabel.setText("")
+      dxValueStatusLabel.setText("")
+      titleButton.setBackground(null)
+    }
 
     def updateStatus(testingResultHolder: Option[TestingResult]) {
 
-
       testingResultHolder.foreach { testingResult =>
 
-        val isDisposed = capacityInfo.isDisposed || dxValueInfo.isDisposed || capacityStatusLabel.isDisposed || dxValueStatusLabel.isDisposed || titleButton.isDisposed
+        val isDisposed = 
+          capacityInfo.isDisposed || dxValueInfo.isDisposed || capacityStatusLabel.isDisposed || 
+          dxValueStatusLabel.isDisposed || titleButton.isDisposed
 
         if (!isDisposed) {
 
@@ -290,6 +315,8 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
         }
       }
     }
+
+    init()
   }
 
 
@@ -311,20 +338,24 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
 
   def createCapcityInfos() = {
     val buttons = Array(
-      new CapacityButton("電容 1", groupFrame),
-      new CapacityButton("電容 2", groupFrame),
-      new CapacityButton("電容 3", groupFrame),
-      new CapacityButton("電容 4", groupFrame),
-      new CapacityButton("電容 5", groupFrame),
-      new CapacityButton("電容 6", groupFrame),
-      new CapacityButton("電容 7", groupFrame),
-      new CapacityButton("電容 8", groupFrame),
-      new CapacityButton("電容 9", groupFrame),
-      new CapacityButton("電容 10", groupFrame)
+      new CapacityInfo("電容 1", groupFrame),
+      new CapacityInfo("電容 2", groupFrame),
+      new CapacityInfo("電容 3", groupFrame),
+      new CapacityInfo("電容 4", groupFrame),
+      new CapacityInfo("電容 5", groupFrame),
+      new CapacityInfo("電容 6", groupFrame),
+      new CapacityInfo("電容 7", groupFrame),
+      new CapacityInfo("電容 8", groupFrame),
+      new CapacityInfo("電容 9", groupFrame),
+      new CapacityInfo("電容 10", groupFrame)
     )
 
     buttons.foreach(_.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true)))
     buttons
+  }
+
+  def clear() {
+    buttons.foreach(_.clear())
   }
 
 
@@ -343,7 +374,10 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
   init()
 }
 
-class OrderStatusSummary(blockNo: Int, daughterBoard: Int, testingBoard: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
+class OrderStatusSummary(var isNewOrder: Boolean, blockNo: Int, daughterBoard: Int, 
+                         testingBoard: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
+
+  var orderInfoHolder: Option[TestingOrder] = TestSetting.db.getTestingOrderByBlock(daughterBoard, testingBoard)
 
   val title = createTitleLabel()
   val composite = createComposite()
@@ -352,7 +386,6 @@ class OrderStatusSummary(blockNo: Int, daughterBoard: Int, testingBoard: Int, ma
   val testSetting = createTestSetting()
   val testControl = createTestControl()
   val capacityBlock = createCapacityBlock()
-  var orderInfoHolder: Option[TestingOrder] = None 
 
   def createComposite() = {
     val composite = new Composite(this, SWT.NONE)
@@ -366,7 +399,16 @@ class OrderStatusSummary(blockNo: Int, daughterBoard: Int, testingBoard: Int, ma
     composite
   }
 
+  def updateNewOrderButtonStatus() {
+    val isTestStopped = orderInfoHolder.map(info => info.currentStatus == 6 || info.currentStatus == 7).getOrElse(false)
+    if (!newOrderButton.isDisposed) {
+      newOrderButton.setVisible(!isNewOrder)
+      newOrderButton.setEnabled(!isNewOrder && isTestStopped)
+    }
+  }
+
   def createNewOrderButton() = {
+    val isTestStopped = orderInfoHolder.map(info => info.currentStatus == 6 || info.currentStatus == 7).getOrElse(false)
     val newOrderButton = new Button(composite, SWT.PUSH)
     val newOrderButtonLayoutData = new GridData
     newOrderButtonLayoutData.heightHint = 50
@@ -374,7 +416,18 @@ class OrderStatusSummary(blockNo: Int, daughterBoard: Int, testingBoard: Int, ma
     newOrderButtonLayoutData.horizontalAlignment = GridData.END
     newOrderButtonLayoutData.grabExcessHorizontalSpace = true
     newOrderButton.setLayoutData(newOrderButtonLayoutData)
+    newOrderButton.setVisible(!isNewOrder)
+    newOrderButton.setEnabled(!isNewOrder && isTestStopped)
     newOrderButton.setText("新測試")
+    newOrderButton.addSelectionListener(new SelectionAdapter() {
+      override def widgetSelected(e: SelectionEvent) {
+        OrderStatusSummary.this.isNewOrder = true
+        testControl.clear()
+        testSetting.clear()
+        capacityBlock.clear()
+        testSetting.setEnabled(true)
+      }
+    })
     newOrderButton
   }
 
@@ -429,6 +482,7 @@ class OrderStatusSummary(blockNo: Int, daughterBoard: Int, testingBoard: Int, ma
 
   def updateInfo() {
     orderInfoHolder = TestSetting.db.getTestingOrderByBlock(daughterBoard, testingBoard)
+    updateNewOrderButtonStatus()
     testSetting.updateSettingInfo(orderInfoHolder)
     capacityBlock.updateCapacityInfo(orderInfoHolder)
     testControl.updateController(orderInfoHolder)
@@ -453,7 +507,9 @@ class OrderStatusSummary(blockNo: Int, daughterBoard: Int, testingBoard: Int, ma
       def run() { 
         Display.getDefault.asyncExec(new Runnable() {
           override def run() {
-            updateInfo()
+            if (!isNewOrder) {
+              updateInfo()
+            }
           }
         })
       } 
