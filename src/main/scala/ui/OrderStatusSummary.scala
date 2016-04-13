@@ -346,11 +346,37 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
 class OrderStatusSummary(blockNo: Int, daughterBoard: Int, testingBoard: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
   val title = createTitleLabel()
+  val composite = createComposite()
+  val newOrderButton = createNewOrderButton()
   val navigationButtons = createNavigationButtons()
   val testSetting = createTestSetting()
   val testControl = createTestControl()
   val capacityBlock = createCapacityBlock()
   var orderInfoHolder: Option[TestingOrder] = None 
+
+  def createComposite() = {
+    val composite = new Composite(this, SWT.NONE)
+    val compositeLayoutData = new GridData
+    compositeLayoutData.horizontalAlignment = GridData.END
+    compositeLayoutData.grabExcessHorizontalSpace = true
+    composite.setLayoutData(compositeLayoutData)
+    val gridLayout = new GridLayout(2, false)
+    gridLayout.horizontalSpacing = 25
+    composite.setLayout(gridLayout)
+    composite
+  }
+
+  def createNewOrderButton() = {
+    val newOrderButton = new Button(composite, SWT.PUSH)
+    val newOrderButtonLayoutData = new GridData
+    newOrderButtonLayoutData.heightHint = 50
+    newOrderButtonLayoutData.widthHint = 150
+    newOrderButtonLayoutData.horizontalAlignment = GridData.END
+    newOrderButtonLayoutData.grabExcessHorizontalSpace = true
+    newOrderButton.setLayoutData(newOrderButtonLayoutData)
+    newOrderButton.setText("新測試")
+    newOrderButton
+  }
 
   def createTitleLabel() = {
     val title = new Label(this, SWT.NONE)
@@ -364,7 +390,7 @@ class OrderStatusSummary(blockNo: Int, daughterBoard: Int, testingBoard: Int, ma
   }
 
   def createNavigationButtons() = {
-    val navigationButtons = new NavigationButtons(this)
+    val navigationButtons = new NavigationButtons(composite)
     val navigationButtonsLayoutData = new GridData
     navigationButtonsLayoutData.heightHint = 50
     navigationButtonsLayoutData.widthHint = 300
