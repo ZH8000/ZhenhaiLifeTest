@@ -643,6 +643,24 @@ class Database(filename: String) {
     statement.executeUpdate()
   }
 
+  def getVoltageSetting(daughterBoard: Int): Option[Double] = {
+    var result: Option[Double] = None
+    val statement = connection.prepareStatement(
+      "SELECT DISTINCT(voltage) FROM TestingOrder WHERE daughterBoard=? AND currentStatus <= 5"
+    )
+
+    statement.setInt(1, daughterBoard)
+    
+    val cursor = statement.executeQuery()
+
+    if (cursor.next()) {
+      result = Some(cursor.getDouble(1))
+    }
+    cursor.close()
+    statement.close()
+    result
+  }
+
   initDB()
 
 }

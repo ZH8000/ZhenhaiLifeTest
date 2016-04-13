@@ -8,6 +8,7 @@ import org.eclipse.swt.widgets.{List => SWTList, _}
 import org.eclipse.swt.layout._
 import org.eclipse.swt.events._
 import java.util.concurrent._
+import scala.util.Try
 
 object TestSetting {
   val voltageList = List(4, 6.3, 10, 16, 25, 35, 50, 63, 80, 100, 160, 200, 220, 250, 315, 350, 400, 420, 450, 500)
@@ -48,9 +49,10 @@ class DropdownField[T](title: String, selection: List[T], parent: Composite) ext
   def deselectAll() {
     combo.deselectAll()
   }
-  def setText(text: String) {
-    combo.setText(text)
-  }
+
+  def setText(text: String)  = combo.setText(text)
+  def getText() = combo.getText()
+  def getSelection() = Option(combo.getSelectionIndex).filter(_ != -1)
 }
 
 class TextEntryField(title: String, isReadOnly: Boolean, isEqualWidth: Boolean, parent: Composite) extends Composite(parent, SWT.NONE) {
@@ -69,65 +71,75 @@ class TextEntryField(title: String, isReadOnly: Boolean, isEqualWidth: Boolean, 
     entry.setBackground(color)
   }
 
+  def isEmpty() = entry.getText.trim.size == 0
+  def getText() = entry.getText
+
   def setText(text: String) {
     entry.setText(text)
   }
 }
 
-class TestControl(parent: Composite) extends Composite(parent, SWT.NONE) {
+class TestControl(parent: OrderStatusSummary) extends Composite(parent, SWT.NONE) {
 
   var orderInfoHolder: Option[TestingOrder] = None
   val groupFrame = new Group(this, SWT.SHADOW_ETCHED_IN)
   val dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+  val startRoomTemperatureTestButton = createButton("室溫測試")
+  val startOvenTestButton = createButton("烤箱測試")
+  val stopTestButton = createButton("中止測試")
+  val startDate = createDateTimeEntry("開始日期：")
+  val testedTime = createDateTimeEntry("測試時間：")
+  val startTime = createDateTimeEntry("開始時間：")
 
-  this.setLayout(new FillLayout)
-  groupFrame.setLayout(new GridLayout(6, true))
-  groupFrame.setText("測試控制")
+  def createButton(title: String) = {
+    val button = new Button(groupFrame, SWT.PUSH)
+    val buttonLayoutData = new GridData(SWT.FILL, SWT.FILL, true, true)
+    buttonLayoutData.horizontalSpan = 2
+    button.setLayoutData(buttonLayoutData)
+    button.setText(title)
+    button
+  }
 
-  val startRoomTemperatureTestButton = new Button(groupFrame, SWT.PUSH)
-  val startOvenTestButton = new Button(groupFrame, SWT.PUSH)
-  val stopTestButton = new Button(groupFrame, SWT.PUSH)
-  val startDate = new TextEntryField("開始日期：", true, false, groupFrame)
-  val testedTime = new TextEntryField("測試時間：", true, false, groupFrame)
-  val startTime = new TextEntryField("開始時間：", true, false, groupFrame)
+  def createDateTimeEntry(title: String) = {
+    val dateTimeEntry = new TextEntryField(title, true, false, groupFrame)
+    val layoutData = new GridData(SWT.FILL, SWT.FILL, true, false)
+    layoutData.horizontalSpan = 3
+    dateTimeEntry.setLayoutData(layoutData)
+    dateTimeEntry
+  }
 
-  val buttonLayoutData1 = new GridData(SWT.FILL, SWT.FILL, true, true)
-  val buttonLayoutData2 = new GridData(SWT.FILL, SWT.FILL, true, true)
-  val buttonLayoutData3 = new GridData(SWT.FILL, SWT.FILL, true, true)
-  buttonLayoutData1.horizontalSpan = 2
-  buttonLayoutData2.horizontalSpan = 2
-  buttonLayoutData3.horizontalSpan = 2
+  def init() {
+    this.setLayout(new FillLayout)
+    groupFrame.setLayout(new GridLayout(6, true))
+    groupFrame.setText("測試控制")
 
-  val timeLayoutData1 = new GridData(SWT.FILL, SWT.FILL, true, false)
-  val timeLayoutData2 = new GridData(SWT.FILL, SWT.FILL, true, false)
-  val timeLayoutData3 = new GridData(SWT.FILL, SWT.FILL, true, false)
+    startRoomTemperatureTestButton.addSelectionListener(new SelectionAdapter() {
+      override def widgetSelected(e: SelectionEvent) {
+        println("====> 按下室溫測試按鈕")
 
-  timeLayoutData1.horizontalSpan = 3
-  timeLayoutData2.horizontalSpan = 3
-  timeLayoutData3.horizontalSpan = 3
+        val settingErrors = parent.testSetting.getSettingErrors
 
-
-  startRoomTemperatureTestButton.setText("室溫測試")
-  startRoomTemperatureTestButton.setLayoutData(buttonLayoutData1)
-
-  startOvenTestButton.setText("烤箱測試")
-  startOvenTestButton.setLayoutData(buttonLayoutData2)
-
-  stopTestButton.setText("中止測試")
-  stopTestButton.setLayoutData(buttonLayoutData3)
-
-  startDate.setLayoutData(timeLayoutData1)
-  testedTime.setLayoutData(timeLayoutData2)
-  startTime.setLayoutData(timeLayoutData1)
-
-  stopTestButton.addSelectionListener(new SelectionAdapter() {
-    override def widgetSelected(e: SelectionEvent) {
-      orderInfoHolder.foreach { orderInfo => 
-        TestSetting.db.abortTest(orderInfo.id) 
-        stopTestButton.setEnabled(false)
+        if (settingErrors.isEmpty) {
+        } else {
+          val messages = settingErrors.mkString("\n")
+          val messageBox = new MessageBox(TestControl.this.getShell, SWT.ICON_WARNING|SWT.OK)
+          messageBox.setMessage("設定錯誤：\n\n" + messages + "\n\n")
+          messageBox.open()
+        }
       }
-    }
-  })
+    })
+
+    stopTestButton.addSelectionListener(new SelectionAdapter() {
+      override def widgetSelected(e: SelectionEvent) {
+        orderInfoHolder.foreach { orderInfo => 
+          TestSetting.db.abortTest(orderInfo.id) 
+          stopTestButton.setEnabled(false)
+        }
+      }
+    })
+
+  }
+
 
   def clear() {
     startDate.setText("")
@@ -173,11 +185,13 @@ class TestControl(parent: Composite) extends Composite(parent, SWT.NONE) {
     }
   }
 
+  init()
+
 
 }
 
 
-class TestSetting(parent: Composite) extends Composite(parent, SWT.NONE) {
+class TestSetting(parent: OrderStatusSummary) extends Composite(parent, SWT.NONE) {
   val groupFrame = new Group(this, SWT.SHADOW_ETCHED_IN)
   val partNoEntry = new TextEntryField("料　　號：", false, false, groupFrame)
   val voltage = new DropdownField("電壓設定：", TestSetting.voltageList, groupFrame)
@@ -188,18 +202,20 @@ class TestSetting(parent: Composite) extends Composite(parent, SWT.NONE) {
   val marginOfError = new DropdownField("誤 差 值：", TestSetting.marginOfErrorList, groupFrame)
   val dx = new DropdownField("損 失 角：", TestSetting.dxList, groupFrame)
 
-  this.setLayout(new FillLayout)
-  groupFrame.setLayout(new GridLayout(3, true))
-  groupFrame.setText("測試設定")
+  def init() {
+    this.setLayout(new FillLayout)
+    groupFrame.setLayout(new GridLayout(3, true))
+    groupFrame.setText("測試設定")
 
-  partNoEntry.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
-  voltage.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
-  testingTime.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
-  capacity.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
-  leakCurrent.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
-  testingInterval.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
-  marginOfError.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
-  dx.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
+    partNoEntry.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
+    voltage.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
+    testingTime.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
+    capacity.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
+    leakCurrent.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
+    testingInterval.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
+    marginOfError.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
+    dx.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
+  }
 
   def clear() {
     this.partNoEntry.setText("")
@@ -233,6 +249,63 @@ class TestSetting(parent: Composite) extends Composite(parent, SWT.NONE) {
       }
     }
   }
+
+  def getSettingErrors(): List[String] = {
+
+    var result: List[String] = Nil
+
+    if (this.partNoEntry.isEmpty) {
+      result ::= " - 未設定料號"
+    }
+
+    if (voltage.getSelection.isEmpty) {
+      result ::= " - 未設定電壓"
+    }
+
+    if (testingTime.getSelection.isEmpty) {
+      result ::= " - 未設定測試時間"
+    }
+
+    if (capacity.getSelection.isEmpty) {
+      result ::= " - 未設定電容值"
+    }
+
+    if (leakCurrent.getSelection.isEmpty) {
+      result ::= " - 未設定漏電流"
+    }
+
+    if (testingInterval.getSelection.isEmpty) {
+      result ::= " - 未設定測試間隔"
+    }
+
+    if (marginOfError.getSelection.isEmpty) {
+      result ::= " - 未設定誤差值"
+    }
+
+    if (dx.getSelection.isEmpty) {
+      result ::= " - 未設定損失角"
+    }
+
+    println("====> parent.daughterBoard:" + parent.daughterBoard)
+    val currentVoltageSettingHolder = TestSetting.db.getVoltageSetting(parent.daughterBoard)
+
+    for {
+      currentVoltageSetting <- currentVoltageSettingHolder
+      newVoltageSetting <- Try(voltage.getText.toDouble)
+    } {
+      if (currentVoltageSetting != newVoltageSetting) {
+        result ::= s" - 電壓設定需與同一子板的測試相同（$currentVoltageSetting）"
+      }
+    }
+
+    println("===> currentVoltage:" + TestSetting.db.getVoltageSetting(parent.daughterBoard))
+    println("===> setVoltage" + voltage.getText)
+
+    result.reverse
+
+  }
+
+  init()
 }
 
 class CapacityBlock(title: String, parent: Composite) extends Composite(parent, SWT.NONE) {
@@ -374,10 +447,10 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
   init()
 }
 
-class OrderStatusSummary(var isNewOrder: Boolean, blockNo: Int, daughterBoard: Int, 
+class OrderStatusSummary(var isNewOrder: Boolean, blockNo: Int, val daughterBoard: Int, 
                          testingBoard: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
-  var orderInfoHolder: Option[TestingOrder] = TestSetting.db.getTestingOrderByBlock(daughterBoard, testingBoard)
+  var orderInfoHolder: Option[TestingOrder] = None
 
   val title = createTitleLabel()
   val composite = createComposite()
