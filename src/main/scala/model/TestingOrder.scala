@@ -64,6 +64,20 @@ case class TestingOrder(
     }
   }
 
+  def statusDescription = {
+    currentStatus match {
+      case 0 if !isRoomTemperatureTested => "新加入"
+      case 0 => "室溫測試完畢"
+      case 1 => "烤箱測試中"
+      case 2 => "高壓 Relay 損壞"
+      case 3 => "找不到烤箱板"
+      case 4 => "其他錯誤"
+      case 5 => "烤箱板 UUID 不符"
+      case 6 => "使用者中止測試"
+      case 7 => "測試完成"
+    }
+  }
+
 
   def duration = {
     currentStatus match {
