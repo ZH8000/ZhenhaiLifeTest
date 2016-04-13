@@ -5,4 +5,5 @@ src/main/resources/*.props
 src/main/resources/props/*
 *.swp
 *.swo
-
+2016-*
+*.db
