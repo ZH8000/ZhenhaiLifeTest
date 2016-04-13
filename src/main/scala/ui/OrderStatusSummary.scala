@@ -7,6 +7,7 @@ import org.eclipse.swt._
 import org.eclipse.swt.widgets.{List => SWTList, _}
 import org.eclipse.swt.layout._
 import org.eclipse.swt.events._
+import java.util.concurrent._
 
 object TestSetting {
   val voltageList = List(4, 6.3, 10, 16, 25, 35, 50, 63, 80, 100, 160, 200, 220, 250, 315, 350, 400, 420, 450, 500)
@@ -130,27 +131,34 @@ class TestControl(parent: Composite) extends Composite(parent, SWT.NONE) {
     this.orderInfoHolder = orderInfoHolder
     updateTimeInfo(orderInfoHolder)
     orderInfoHolder.foreach { orderInfo =>
-      
-      if (!orderInfo.isRoomTemperatureTested) {
-        startRoomTemperatureTestButton.setEnabled(true)
-        startOvenTestButton.setEnabled(false)
-        stopTestButton.setEnabled(false)
-      } else {
-        startRoomTemperatureTestButton.setEnabled(false)
-        val shouldEnableOvenTestButton = orderInfo.currentStatus == 0
-        val shouldEnableStopButton = orderInfo.currentStatus != 6 && orderInfo.currentStatus != 7
-        startOvenTestButton.setEnabled(shouldEnableOvenTestButton)
-        stopTestButton.setEnabled(shouldEnableStopButton)
-      }
 
+      val isDisposed = startRoomTemperatureTestButton.isDisposed || startOvenTestButton.isDisposed || stopTestButton.isDisposed
+
+      if (!isDisposed) {
+      
+        if (!orderInfo.isRoomTemperatureTested) {
+          startRoomTemperatureTestButton.setEnabled(true)
+          startOvenTestButton.setEnabled(false)
+          stopTestButton.setEnabled(false)
+        } else {
+          startRoomTemperatureTestButton.setEnabled(false)
+          val shouldEnableOvenTestButton = orderInfo.currentStatus == 0
+          val shouldEnableStopButton = orderInfo.currentStatus != 6 && orderInfo.currentStatus != 7
+          startOvenTestButton.setEnabled(shouldEnableOvenTestButton)
+          stopTestButton.setEnabled(shouldEnableStopButton)
+        }
+      }
     }
   }
 
   def updateTimeInfo(orderInfoHolder: Option[TestingOrder]) {
     orderInfoHolder.foreach { orderInfo =>
-      startDate.setText(orderInfo.formattedStartDate)
-      startTime.setText(orderInfo.formattedStartTime)
-      testedTime.setText(orderInfo.duration)
+      val isDisposed = startDate.isDisposed || startTime.isDisposed || testedTime.isDisposed
+      if (!isDisposed) {
+        startDate.setText(orderInfo.formattedStartDate)
+        startTime.setText(orderInfo.formattedStartTime)
+        testedTime.setText(orderInfo.duration)
+      }
     }
   }
 
@@ -183,26 +191,32 @@ class TestSetting(parent: Composite) extends Composite(parent, SWT.NONE) {
   dx.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false))
 
   def updateSettingInfo(testingOrderHolder: Option[TestingOrder]) {
-    testingOrderHolder match {
-      case None =>
-        this.partNoEntry.setText("")
-        this.voltage.setText("")
-        this.testingTime.setText("")
-        this.capacity.setText("")
-        this.leakCurrent.setText("")
-        this.testingInterval.setText("")
-        this.marginOfError.setText("")
-        this.dx.setText("")
-      case Some(testingOrder) =>
-        this.setEnabled(false)
-        this.partNoEntry.setText(testingOrder.partNo)
-        this.voltage.setText(testingOrder.voltage.toString)
-        this.testingTime.setText(testingOrder.testingTime.toString)
-        this.capacity.setText(testingOrder.capacity.toString)
-        this.leakCurrent.setText(testingOrder.leakCurrent)
-        this.testingInterval.setText(testingOrder.testingInterval.toString)
-        this.marginOfError.setText(TestSetting.marginOfErrorCodeToFullText(testingOrder.marginOfError))
-        this.dx.setText(testingOrder.dxValue.toString)
+
+    val isDisposed = partNoEntry.isDisposed || voltage.isDisposed || testingTime.isDisposed || capacity.isDisposed || leakCurrent.isDisposed || testingInterval.isDisposed || marginOfError.isDisposed || dx.isDisposed
+
+    if (!isDisposed) {
+
+      testingOrderHolder match {
+        case None =>
+          this.partNoEntry.setText("")
+          this.voltage.setText("")
+          this.testingTime.setText("")
+          this.capacity.setText("")
+          this.leakCurrent.setText("")
+          this.testingInterval.setText("")
+          this.marginOfError.setText("")
+          this.dx.setText("")
+        case Some(testingOrder) =>
+          this.setEnabled(false)
+          this.partNoEntry.setText(testingOrder.partNo)
+          this.voltage.setText(testingOrder.voltage.toString)
+          this.testingTime.setText(testingOrder.testingTime.toString)
+          this.capacity.setText(testingOrder.capacity.toString)
+          this.leakCurrent.setText(testingOrder.leakCurrent)
+          this.testingInterval.setText(testingOrder.testingInterval.toString)
+          this.marginOfError.setText(TestSetting.marginOfErrorCodeToFullText(testingOrder.marginOfError))
+          this.dx.setText(testingOrder.dxValue.toString)
+      }
     }
   }
 }
@@ -257,17 +271,23 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
 
 
       testingResultHolder.foreach { testingResult =>
-        capacityInfo.setText(testingResult.capacity.toString)
-        dxValueInfo.setText(testingResult.dxValue.toString)
-        
-        val isCapacityOKIcon = if (testingResult.isCapacityOK) "O" else "X"
-        val isDXValueOKIcon = if (testingResult.isDXValueOK) "O" else "X"
-        
-        capacityStatusLabel.setText(isCapacityOKIcon)
-        dxValueStatusLabel.setText(isDXValueOKIcon)
 
-        val titleButtonColor = if (testingResult.isOK) greenColor else redColor
-        titleButton.setBackground(titleButtonColor)
+        val isDisposed = capacityInfo.isDisposed || dxValueInfo.isDisposed || capacityStatusLabel.isDisposed || dxValueStatusLabel.isDisposed || titleButton.isDisposed
+
+        if (!isDisposed) {
+
+          capacityInfo.setText(testingResult.capacity.toString)
+          dxValueInfo.setText(testingResult.dxValue.toString)
+        
+          val isCapacityOKIcon = if (testingResult.isCapacityOK) "O" else "X"
+          val isDXValueOKIcon = if (testingResult.isDXValueOK) "O" else "X"
+        
+          capacityStatusLabel.setText(isCapacityOKIcon)
+          dxValueStatusLabel.setText(isDXValueOKIcon)
+
+          val titleButtonColor = if (testingResult.isOK) greenColor else redColor
+          titleButton.setBackground(titleButtonColor)
+        }
       }
     }
   }
@@ -315,7 +335,6 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
       capacityID <- 1 to 10
       button = buttons(capacityID-1)
     } {
-      println("capacityID:" + capacityID)
       button.updateStatus(TestSetting.db.getTestingResult(orderInfo.id, capacityID))
     }
 
@@ -331,7 +350,7 @@ class OrderStatusSummary(blockNo: Int, daughterBoard: Int, testingBoard: Int, ma
   val testSetting = createTestSetting()
   val testControl = createTestControl()
   val capacityBlock = createCapacityBlock()
-  val orderInfoHolder = TestSetting.db.getTestingOrderByBlock(daughterBoard, testingBoard)
+  var orderInfoHolder: Option[TestingOrder] = None 
 
   def createTitleLabel() = {
     val title = new Label(this, SWT.NONE)
@@ -382,9 +401,17 @@ class OrderStatusSummary(blockNo: Int, daughterBoard: Int, testingBoard: Int, ma
     block
   }
 
-  def init() {
+  def updateInfo() {
+    orderInfoHolder = TestSetting.db.getTestingOrderByBlock(daughterBoard, testingBoard)
+    testSetting.updateSettingInfo(orderInfoHolder)
+    capacityBlock.updateCapacityInfo(orderInfoHolder)
+    testControl.updateController(orderInfoHolder)
+  }
 
-    println(orderInfoHolder)
+  val scheduler = new ScheduledThreadPoolExecutor(1)
+  val scheduledUpdate = initWindowAndScheduleUpdate()
+
+  def initWindowAndScheduleUpdate() = {
 
     val gridLayout = new GridLayout(3, true)
 
@@ -394,10 +421,27 @@ class OrderStatusSummary(blockNo: Int, daughterBoard: Int, testingBoard: Int, ma
     gridLayout.marginHeight = 200
 
     this.setLayout(gridLayout)
-    testSetting.updateSettingInfo(orderInfoHolder)
-    capacityBlock.updateCapacityInfo(orderInfoHolder)
-    testControl.updateController(orderInfoHolder)
+    updateInfo()
+
+    val updater = new Runnable { 
+      def run() { 
+        Display.getDefault.asyncExec(new Runnable() {
+          override def run() {
+            updateInfo()
+          }
+        })
+      } 
+    }
+    scheduler.scheduleWithFixedDelay(updater, 0, 1, TimeUnit.SECONDS)
   }
 
-  init()
+  this.addDisposeListener(new DisposeListener() {
+    override def widgetDisposed(event: DisposeEvent) {
+      scheduledUpdate.cancel(false)
+      scheduler.shutdown()
+    }
+  })
+
+
+
 }

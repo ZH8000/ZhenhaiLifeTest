@@ -338,7 +338,7 @@ class Database(filename: String) {
       "SELECT * FROM TestingOrder " +
       "WHERE (lastTestTime + (?*testingInterval) < ?) " + 
       "AND id NOT IN (SELECT testingID FROM OvenTestingQueue) " + 
-      "AND isRoomTemperatureTested AND currentStatus IN (1, 3, 4, 5, 6)"
+      "AND isRoomTemperatureTested AND currentStatus IN (1, 3, 4, 5)"
     )
     statement.setInt(1, timeIntervalScalar)
     statement.setLong(2, currentTime)
@@ -383,7 +383,7 @@ class Database(filename: String) {
     val statement = connection.prepareStatement(
       "SELECT * FROM TestingOrder " +
       "WHERE (startTime + (testingTime * ?) + ? < ?) " + 
-      "AND isRoomTemperatureTested AND currentStatus IN (1, 3, 4, 5, 6)"
+      "AND isRoomTemperatureTested AND currentStatus IN (1, 3, 4, 5)"
     )
     statement.setInt(1, testingTimeScalar)
     statement.setInt(2, postponeInMinutes)
@@ -429,7 +429,7 @@ class Database(filename: String) {
     var result: Set[(Int, Double)] = Set.empty
     val statement = connection.prepareStatement(
       "SELECT daughterBoard, voltage FROM TestingOrder " +
-      "WHERE isRoomTemperatureTested AND currentStatus IN (1, 3, 4, 5, 6)"
+      "WHERE isRoomTemperatureTested AND currentStatus IN (1, 3, 4, 5)"
     )
     
     val cursor = statement.executeQuery()
