@@ -697,6 +697,36 @@ class Database(filename: String) {
     (goodCapacity -- damagedCapacity).size
   }
 
+  def getAllTestingResult(testingID: Long, capacityID: Int): List[TestingResult] = {
+    var result: List[TestingResult] = Nil
+    val statement = connection.prepareStatement(
+      "SELECT * FROM RoomTemperatureTestingResult where testingID=? AND capacityID=? UNION SELECT * FROM OvenTestingResult where testingID=? AND capacityID=? ORDER BY timestamp DESC"
+    )
+
+    statement.setLong(1, testingID)
+    statement.setInt(2, capacityID)
+    statement.setLong(3, testingID)
+    statement.setInt(4, capacityID)
+
+    val cursor = statement.executeQuery()
+    while (cursor.next()) {
+      result ::= TestingResult(
+        cursor.getLong(1),
+        cursor.getInt(2),
+        cursor.getDouble(3),
+        cursor.getDouble(4),
+        cursor.getBoolean(5),
+        cursor.getBoolean(6),
+        cursor.getBoolean(7),
+        cursor.getBoolean(8),
+        cursor.getLong(9)
+      )
+    }
+    cursor.close()
+    statement.close()
+    result
+  }
+
   def getTestingResult(testingID: Long, capacityID: Int): Option[TestingResult] = {
     var result: Option[TestingResult] = None
     val statement = connection.prepareStatement(

@@ -1,44 +1,80 @@
 package tw.com.zhenhai.lifetest;
 
+import zhenhai.lifetest.controller.model._
 import org.eclipse.swt._
 import org.eclipse.swt.widgets._
 import org.eclipse.swt.layout._
 import org.eclipse.swt.events._
+import java.util.Date
 
-class CapacityTestChart(title: String) {
+trait ChartType
+object CapacityValueChart extends ChartType
+object DXValueChart extends ChartType
+object LCValueChart extends ChartType
+
+class CapacityTestChart(title: String, testingID: Long, capacityID: Int, chartType: ChartType) {
   
   import org.jfree.data.xy.XYDataset
   import org.jfree.data.xy.XYSeries
   import org.jfree.data.xy.XYSeriesCollection
+  import org.jfree.data.time._
   import org.jfree.chart.ChartFactory
   import org.jfree.experimental.chart.swt.ChartComposite
   import org.jfree.chart.plot.PlotOrientation
   import java.awt.Color
+  import org.jfree.chart.axis.NumberAxis
+  import org.jfree.chart.axis.NumberTickUnit
 
+  lazy val testingResult = TestSetting.db.getAllTestingResult(testingID, capacityID)
   lazy val dataset = createDataSet
   lazy val chart = {
-    val chart = ChartFactory.createXYLineChart(title, "Time", "Value", dataset, PlotOrientation.VERTICAL, false, false, false)
+    val chart = ChartFactory.createTimeSeriesChart(title, "時間", title, dataset)
+    val rangeAxis = chart.getXYPlot.getRangeAxis.asInstanceOf[NumberAxis]
+    rangeAxis.setUpperBound(rangeAxis.getUpperBound + 2)
+    rangeAxis.setLowerBound(rangeAxis.getLowerBound - 2)
+    rangeAxis.setTickUnit(new NumberTickUnit(0.5))
     chart.setBackgroundPaint(Color.LIGHT_GRAY)
     chart
   }
 
-  def createDataSet = {
-    val s1 = new XYSeries(title)
-
-    for (index <- 0 until 30) {
-      s1.add(index, (Math.random * 100).toInt)
+  def createDXValueDataset = {
+    val series = new TimeSeries(title)
+    for (row <- testingResult) {
+      val timestamp = new Date(row.timestamp)
+      series.add(new Minute(timestamp) , row.dxValue)
     }
-
-    val dataset = new XYSeriesCollection
-    dataset.addSeries(s1)
-    dataset
+    new TimeSeriesCollection(series)
   }
 
-  def createChartComposite(parent: Composite) = new ChartComposite(parent, SWT.NONE, chart, true)
+  def createCapacityValueDataset = {
+    val series = new TimeSeries(title)
+    for (row <- testingResult) {
+      val timestamp = new Date(row.timestamp)
+      series.add(new Minute(timestamp) , row.capacity)
+    }
+    new TimeSeriesCollection(series)
+  }
+
+
+  def createDataSet = {
+
+    chartType match {
+      case CapacityValueChart => createCapacityValueDataset
+      case DXValueChart => createDXValueDataset
+      case LCValueChart => new XYSeriesCollection
+    }
+  }
+
+  def createChartComposite(parent: Composite) = {
+    val composite = new ChartComposite(parent, SWT.NONE, chart, true)
+    composite.setDomainZoomable(false)
+    composite.setRangeZoomable(false)
+    composite
+  }
 
 }
 
-class OrderCapacityDetail(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
+class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, capacityID: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
   def init() {
     val gridLayout = new GridLayout(3, true)
@@ -51,13 +87,13 @@ class OrderCapacityDetail(mainWindowShell: Shell) extends Composite(mainWindowSh
     this.setLayout(gridLayout)
 
     val title = new Label(this, SWT.NONE)
-    title.setText("訂單編號：1001     區域：Area1")
+    title.setText(s"區塊 $blockNo         料號：${orderInfo.partNo}")
 
     val dateTitle = new Label(this, SWT.NONE)
     val dateTitleLayoutData = new GridData
     dateTitleLayoutData.horizontalAlignment = GridData.CENTER
     dateTitle.setLayoutData(dateTitleLayoutData)
-    dateTitle.setText("Cap X")
+    dateTitle.setText(s"電容 $capacityID")
 
     val navigationButtons = new NavigationButtons(this)
     val navigationButtonsLayoutData = new GridData
@@ -67,7 +103,7 @@ class OrderCapacityDetail(mainWindowShell: Shell) extends Composite(mainWindowSh
     navigationButtonsLayoutData.grabExcessHorizontalSpace = true
     navigationButtons.setLayoutData(navigationButtonsLayoutData)
   
-    val chart1 = new CapacityTestChart("A")
+    val chart1 = new CapacityTestChart("電容值", orderInfo.id, capacityID, CapacityValueChart)
     val chart1Composite = chart1.createChartComposite(this)
     val chart1CompositeLayoutData = new GridData
     chart1CompositeLayoutData.horizontalAlignment = GridData.FILL
@@ -76,7 +112,7 @@ class OrderCapacityDetail(mainWindowShell: Shell) extends Composite(mainWindowSh
     chart1CompositeLayoutData.grabExcessVerticalSpace = true
     chart1Composite.setLayoutData(chart1CompositeLayoutData)
 
-    val chart2 = new CapacityTestChart("B")
+    val chart2 = new CapacityTestChart("損失角", orderInfo.id, capacityID,DXValueChart)
     val chart2Composite = chart2.createChartComposite(this)
     val chart2CompositeLayoutData = new GridData
     chart2CompositeLayoutData.horizontalAlignment = GridData.FILL
@@ -85,7 +121,7 @@ class OrderCapacityDetail(mainWindowShell: Shell) extends Composite(mainWindowSh
     chart2CompositeLayoutData.grabExcessVerticalSpace = true
     chart2Composite.setLayoutData(chart2CompositeLayoutData)
 
-    val chart3 = new CapacityTestChart("C")
+    val chart3 = new CapacityTestChart("漏電流", orderInfo.id, capacityID, LCValueChart)
     val chart3Composite = chart3.createChartComposite(this)
     val chart3CompositeLayoutData = new GridData
     chart3CompositeLayoutData.horizontalAlignment = GridData.FILL
