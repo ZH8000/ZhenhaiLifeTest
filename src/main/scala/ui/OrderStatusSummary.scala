@@ -635,7 +635,8 @@ class OrderStatusSummary(var isNewOrder: Boolean, blockNo: Int, val daughterBoar
   }
 
   def clear() {
-    OrderStatusSummary.this.isNewOrder = true
+    this.isNewOrder = true
+    this.orderInfoHolder = None
     testControl.clear()
     testSetting.clear()
     capacityBlock.clear()
