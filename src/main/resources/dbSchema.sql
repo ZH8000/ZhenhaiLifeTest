@@ -1,5 +1,5 @@
 CREATE TABLE TestingOrder (
-  id                        INTEGER PRIMARY KEY,
+  id                        INTEGER PRIMARY KEY AUTOINCREMENT,
   partNo                    TEXT NOT NULL, 
   capacity                  REAL NOT NULL,
   voltage                   INTEGER NOT NULL,

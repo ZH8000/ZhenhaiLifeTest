@@ -47,7 +47,7 @@ class HistoryQueryResult(mainWindowShell: Shell, title: String) extends Composit
         val selectedIndex = table.getSelectionIndex
         val selectedItem = table.getItem(selectedIndex)
         MainWindow.appendLog(s"點選 [$selectedIndex] => ${selectedItem.getText(0)} / ${selectedItem.getText(1)}")
-        MainWindow.pushComposite(new OrderStatusSummary(-1, -1, -1, MainWindow.mainWindowShell))
+        MainWindow.pushComposite(new OrderStatusSummary(false, -1, -1, -1, MainWindow.mainWindowShell))
       }
     })
     val columns = Array(new TableColumn(table, SWT.CENTER), new TableColumn(table, SWT.CENTER))

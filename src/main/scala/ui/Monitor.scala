@@ -36,7 +36,7 @@ class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, S
           partNo.setText(orderInfo.partNo)
           okCount.setText(goodCount.toString)
           testedTime.setText(orderInfo.duration)
-          status.setText(orderInfo.currentStatus.toString)
+          status.setText(orderInfo.statusDescription)
         }
       }
 
@@ -78,7 +78,7 @@ class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, S
       val partNo = new TextEntryField("料號：", true, true, areaInfoGroup)
       val okCount = new TextEntryField("良品：", true, true, areaInfoGroup)
       val testedTime = new TextEntryField("測試時間：", true, true, areaInfoGroup)
-      val status = new TextEntryField("狀態：", true, true, areaInfoGroup)
+      val status = new TextEntryField("狀態：", true, false, areaInfoGroup)
 
       partNo.setLayoutData(new GridData(GridData.FILL, GridData.BEGINNING, true, false))
       okCount.setLayoutData(new GridData(GridData.FILL, GridData.BEGINNING, true, false))
@@ -88,7 +88,7 @@ class MonitorWindow(mainWindowShell: Shell) extends Composite(mainWindowShell, S
       areaButton.addSelectionListener(new SelectionAdapter() {
         override def widgetSelected(e: SelectionEvent) {
           MainWindow.appendLog(s"點選「${areaButton.getText}」")
-          MainWindow.pushComposite(new OrderStatusSummary(areaNumber, daughterBoard, testingBoard, mainWindowShell))
+          MainWindow.pushComposite(new OrderStatusSummary(orderInfoHolder.isEmpty, areaNumber, daughterBoard, testingBoard, mainWindowShell))
         }
       })
   

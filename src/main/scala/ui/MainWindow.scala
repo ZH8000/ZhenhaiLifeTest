@@ -18,7 +18,7 @@ trait StackableWindow {
   def pushComposite(composite: Composite) {
     compositeStack ::= composite
     stackLayout.topControl = composite
-    composite.pack()
+    //composite.pack()
     mainWindowShell.layout()
   }
 
@@ -26,6 +26,7 @@ trait StackableWindow {
 
     val previousComposite = compositeStack.head
 
+    previousComposite.setVisible(false)
     compositeStack = compositeStack.drop(1)
     stackLayout.topControl = compositeStack.head
     stackLayout.topControl.pack()
