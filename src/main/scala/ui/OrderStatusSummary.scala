@@ -594,9 +594,9 @@ class TestSetting(parent: OrderStatusSummary) extends Composite(parent, SWT.NONE
   init()
 }
 
-class CapacityBlock(title: String, parent: Composite) extends Composite(parent, SWT.NONE) {
+class CapacityBlock(title: String, orderStatusSummary: OrderStatusSummary) extends Composite(orderStatusSummary, SWT.NONE) {
 
-  class CapacityInfo(title: String, parent: Composite) extends Composite(parent, SWT.NONE) {
+  class CapacityInfo(title: String, capacityID: Int, parent: Composite) extends Composite(parent, SWT.NONE) {
 
     val greenColor = Display.getCurrent.getSystemColor(SWT.COLOR_GREEN)
     val redColor = Display.getCurrent.getSystemColor(SWT.COLOR_RED)
@@ -636,7 +636,17 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
       button.addSelectionListener(new SelectionAdapter() {
         override def widgetSelected(e: SelectionEvent) {
           MainWindow.appendLog(s"點選「${CapacityBlock.this.title}」中的「$title」按鈕")
-          MainWindow.pushComposite(new OrderCapacityDetail(MainWindow.mainWindowShell))
+
+          orderStatusSummary.orderInfoHolder match {
+            case None =>
+              val messageBox = new MessageBox(getShell, SWT.OK)
+              messageBox.setText("尚無資料")
+              messageBox.setMessage("此區塊尚無測試資料")
+              messageBox.open()
+            case Some(orderInfo) =>
+              val detailPage = new OrderCapacityDetail(orderStatusSummary.blockNo, orderInfo, capacityID, MainWindow.mainWindowShell)
+              MainWindow.pushComposite(detailPage)
+            }
         }
       })
       button
@@ -697,16 +707,16 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
 
   def createCapcityInfos() = {
     val buttons = Array(
-      new CapacityInfo("電容 1", groupFrame),
-      new CapacityInfo("電容 2", groupFrame),
-      new CapacityInfo("電容 3", groupFrame),
-      new CapacityInfo("電容 4", groupFrame),
-      new CapacityInfo("電容 5", groupFrame),
-      new CapacityInfo("電容 6", groupFrame),
-      new CapacityInfo("電容 7", groupFrame),
-      new CapacityInfo("電容 8", groupFrame),
-      new CapacityInfo("電容 9", groupFrame),
-      new CapacityInfo("電容 10", groupFrame)
+      new CapacityInfo("電容 1", 1, groupFrame),
+      new CapacityInfo("電容 2", 2, groupFrame),
+      new CapacityInfo("電容 3", 3, groupFrame),
+      new CapacityInfo("電容 4", 4, groupFrame),
+      new CapacityInfo("電容 5", 5, groupFrame),
+      new CapacityInfo("電容 6", 6, groupFrame),
+      new CapacityInfo("電容 7", 7, groupFrame),
+      new CapacityInfo("電容 8", 8, groupFrame),
+      new CapacityInfo("電容 9", 9, groupFrame),
+      new CapacityInfo("電容 10", 10, groupFrame)
     )
 
     buttons.foreach(_.setLayoutData(new GridData(GridData.FILL, GridData.FILL, true, true)))
@@ -733,7 +743,7 @@ class CapacityBlock(title: String, parent: Composite) extends Composite(parent, 
   init()
 }
 
-class OrderStatusSummary(var isNewOrder: Boolean, blockNo: Int, val daughterBoard: Int, 
+class OrderStatusSummary(var isNewOrder: Boolean, val blockNo: Int, val daughterBoard: Int, 
                          val testingBoard: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
   var orderInfoHolder: Option[TestingOrder] = None
