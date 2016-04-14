@@ -65,7 +65,12 @@ class CapacityTestChart(title: String, testingID: Long, capacityID: Int, chartTy
     }
   }
 
-  def createChartComposite(parent: Composite) = new ChartComposite(parent, SWT.NONE, chart, true)
+  def createChartComposite(parent: Composite) = {
+    val composite = new ChartComposite(parent, SWT.NONE, chart, true)
+    composite.setDomainZoomable(false)
+    composite.setRangeZoomable(false)
+    composite
+  }
 
 }
 
