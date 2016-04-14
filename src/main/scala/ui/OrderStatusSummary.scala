@@ -154,7 +154,7 @@ class TestControl(orderStatusSummary: OrderStatusSummary) extends Composite(orde
           }
 
           // 發生錯誤
-          if (currentStatus >= 2 && currentStatus <= 6) {
+          if (currentStatus >= 2 && currentStatus <= 8) {
             val message = currentStatus match {
               case 2 => "資料庫中找不到測試單，系統異常，請連絡技術人員。"
               case 3 => "烤箱板高壓 Relay 損換，請更換烤箱板。"
