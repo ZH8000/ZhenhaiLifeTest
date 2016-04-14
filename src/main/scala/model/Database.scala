@@ -63,6 +63,39 @@ class Database(filename: String) {
     }
   }
 
+  def insertOvenUUIDCheckingQueue(testingID: Long) {
+    var resultList: List[RoomTemperatureTestingQueue] = Nil
+    val statement = connection.prepareStatement(
+      "INSERT INTO OvenUUIDCheckingQueue VALUES(?, ?, 0)"
+    )
+    statement.setLong(1, testingID)
+    statement.setLong(2, System.currentTimeMillis)
+    statement.executeUpdate()
+  }
+
+  def getOvenUUIDCheckingQueue(testingID: Long): Option[OvenUUIDCheckingQueue] = {
+    var resultList: List[OvenUUIDCheckingQueue] = Nil
+    val statement = connection.prepareStatement(
+      """SELECT testingID, insertTime, currentStatus FROM OvenUUIDCheckingQueue WHERE testingID=?"""
+    )
+    statement.setLong(1, testingID)
+    val cursor = statement.executeQuery()
+    while (cursor.next()) {
+      resultList ::= OvenUUIDCheckingQueue(
+        cursor.getLong(1),
+        cursor.getLong(2),
+        cursor.getInt(3)
+      )
+    }
+
+    cursor.close()
+    statement.close()
+
+    resultList.headOption
+  }
+
+
+
   def insertRoomTemperatureTestingQueue(testingID: Long) {
     var resultList: List[RoomTemperatureTestingQueue] = Nil
     val statement = connection.prepareStatement(
@@ -332,6 +365,17 @@ class Database(filename: String) {
     statement.executeUpdate()
     statement.close()
   }
+
+  def deleteOvenUUIDCheckingQueue(testingID: Long) {
+    val statement = connection.prepareStatement(
+      "DELETE FROM OvenUUIDCheckingQueue WHERE testingID=?"
+    )
+    statement.setLong(1, testingID)
+    statement.executeUpdate()
+    statement.close()
+  }
+
+
 
   def deleteTemperatureTest(testingID: Long) {
     val statement = connection.prepareStatement(

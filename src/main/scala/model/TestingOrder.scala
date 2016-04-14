@@ -47,7 +47,7 @@ case class TestingOrder(
   isRoomTemperatureTested: Boolean
 ) {
   val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
-  val timeFormatter = new SimpleDateFormat("mm:HH:ss")
+  val timeFormatter = new SimpleDateFormat("HH:mm:ss")
 
   def formattedStartDate = {
 

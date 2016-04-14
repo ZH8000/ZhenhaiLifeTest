@@ -109,6 +109,120 @@ class TestControl(orderStatusSummary: OrderStatusSummary) extends Composite(orde
     dateTimeEntry
   }
 
+  class OvenTestingDialog(orderInfo: TestingOrder, parent: Shell, style: Int) extends Dialog(parent, style) {
+
+    var hasMessageBox: Boolean = false
+    val scheduler = new ScheduledThreadPoolExecutor(1)
+    val shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL)
+
+    def showMessageBox(message: String, style: Int) = {
+      hasMessageBox = true
+      val messageBox = new MessageBox(shell, style)
+      messageBox.setMessage(message)
+      val responseCode = messageBox.open()
+      hasMessageBox = false
+      responseCode
+    }
+
+    def startTestingSequence() {
+      TestSetting.db.insertOvenUUIDCheckingQueue(orderInfo.id)
+    }
+
+    def abortTest() {
+      TestSetting.db.deleteOvenUUIDCheckingQueue(orderInfo.id)
+    }
+
+    val updater = new Runnable() {
+      var count = 0L
+      override def run() {
+        for {
+          queueData <- TestSetting.db.getOvenUUIDCheckingQueue(orderInfo.id)
+        } {
+          
+          val currentStatus = queueData.currentStatus
+
+          // 已完成測試
+          if (currentStatus == 9) {
+            shell.getDisplay.asyncExec(new Runnable() {
+              override def run() {
+                if (!hasMessageBox && !shell.isDisposed) {
+                  showMessageBox("烤箱測試程序已正常啟動", SWT.OK)
+                  shell.dispose()
+                }
+              }
+            })
+          }
+
+          // 發生錯誤
+          if (currentStatus >= 2 && currentStatus <= 6) {
+            val message = currentStatus match {
+              case 2 => "資料庫中找不到測試單，系統異常，請連絡技術人員。"
+              case 3 => "烤箱板高壓 Relay 損換，請更換烤箱板。"
+              case 4 => "找不到測試板，請確認是否已連接後重試。"
+              case 5 => "主板 RS232 回應逾時。"
+              case 6 => "電源供應器 RS232 回應逾時，請檢查電源是否開啟及通訊線是否正常連接。"
+              case 7 => "發生其他異常錯誤，請連絡技述人員。"
+              case 8 => "烤箱板編號與室溫測試時不同，請確認為同一組烤箱板。"
+            }
+
+            shell.getDisplay.asyncExec(new Runnable() {
+              override def run() {
+                if (!hasMessageBox && !shell.isDisposed) {
+
+                  val responseCode = showMessageBox(message, SWT.RETRY|SWT.CANCEL)
+                  if (responseCode == SWT.CANCEL) {
+                    abortTest()
+                    shell.dispose()           
+                  } else {
+                    TestSetting.db.updateOvenUUIDCheckingQueue(queueData.copy(currentStatus = 0))
+                  }
+                }
+              }
+            })
+          }
+        }
+        count += 1
+      }
+    }
+
+    def open() = {
+      import org.eclipse.swt.graphics.Font
+      val parent = getParent()
+      val scheduledTask = scheduler.scheduleWithFixedDelay(updater, 0, 250, TimeUnit.MILLISECONDS)
+      val label = new Label(shell, SWT.NONE)
+
+      val layout = new FillLayout
+      layout.marginWidth = 30
+      layout.marginHeight = 30
+      shell.setText("烤箱測試啟動中")
+      label.setText("烤箱測試啟動檢查中，請稍候……")
+
+      val fontData = label.getFont().getFontData()(0)
+      fontData.setHeight(30)
+      label.setFont( new Font(shell.getDisplay,fontData))
+      shell.setLayout(layout)
+      shell.pack()
+      shell.open()
+      shell.addShellListener(new ShellAdapter() {
+        override def shellClosed(e: ShellEvent) {
+          e.doit = false
+        }
+      })
+
+      startTestingSequence()
+
+      val display = parent.getDisplay()
+      while (!shell.isDisposed()) {
+        if (!display.readAndDispatch()) {
+	  display.sleep()
+        }
+      }
+      scheduledTask.cancel(false)
+      scheduler.shutdown()
+    }
+    
+  }
+
   class RoomTemperatureTestingDialog(parent: Shell, style: Int) extends Dialog(parent, style) {
 
     var orderInfoHolder: Option[TestingOrder] = None
@@ -234,9 +348,35 @@ class TestControl(orderStatusSummary: OrderStatusSummary) extends Composite(orde
     
   }
 
+
   def startRoomTemperatureTest() {
-    val dialog = new RoomTemperatureTestingDialog(getShell, SWT.APPLICATION_MODAL)
-    dialog.open()
+
+    val settingErrors = orderStatusSummary.testSetting.getSettingErrors
+
+    if (settingErrors.isEmpty) {
+      val confirmBox = new MessageBox(TestControl.this.getShell, SWT.ICON_INFORMATION|SWT.OK|SWT.CANCEL)
+      confirmBox.setMessage("請將測試板插入室溫測試專用插槽中後按下確認按鈕。")
+      val responseCode = confirmBox.open()
+
+      if (responseCode == SWT.OK) {
+        val dialog = new RoomTemperatureTestingDialog(getShell, SWT.APPLICATION_MODAL)
+        dialog.open()
+      }
+
+    } else {
+      val messages = settingErrors.mkString("\n")
+      val messageBox = new MessageBox(TestControl.this.getShell, SWT.ICON_WARNING|SWT.OK)
+      messageBox.setMessage("設定錯誤：\n\n" + messages + "\n\n")
+      messageBox.open()
+    }
+  }
+
+  def startOvenTest() {
+    orderStatusSummary.orderInfoHolder.foreach { orderInfo =>
+      val dialog = new OvenTestingDialog(orderInfo, getShell, SWT.APPLICATION_MODAL)
+      dialog.open()
+    }
+
   }
 
   def init() {
@@ -246,25 +386,15 @@ class TestControl(orderStatusSummary: OrderStatusSummary) extends Composite(orde
     startOvenTestButton.setEnabled(false)
     stopTestButton.setEnabled(false)
 
+    startOvenTestButton.addSelectionListener(new SelectionAdapter() {
+      override def widgetSelected(e: SelectionEvent) {
+        startOvenTest()
+      }
+    })
+
     startRoomTemperatureTestButton.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(e: SelectionEvent) {
-        val settingErrors = orderStatusSummary.testSetting.getSettingErrors
-
-        if (settingErrors.isEmpty) {
-
-          val confirmBox = new MessageBox(TestControl.this.getShell, SWT.ICON_INFORMATION|SWT.OK|SWT.CANCEL)
-          confirmBox.setMessage("請將測試板插入室溫測試專用插槽中後按下確認按鈕。")
-          confirmBox.open() match {
-            case SWT.CANCEL => println("取消……")
-            case SWT.OK => startRoomTemperatureTest()
-          }
-          
-        } else {
-          val messages = settingErrors.mkString("\n")
-          val messageBox = new MessageBox(TestControl.this.getShell, SWT.ICON_WARNING|SWT.OK)
-          messageBox.setMessage("設定錯誤：\n\n" + messages + "\n\n")
-          messageBox.open()
-        }
+        startRoomTemperatureTest()
       }
     })
 
@@ -276,7 +406,6 @@ class TestControl(orderStatusSummary: OrderStatusSummary) extends Composite(orde
         }
       }
     })
-
   }
 
 
