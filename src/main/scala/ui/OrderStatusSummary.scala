@@ -87,9 +87,10 @@ class TestControl(orderStatusSummary: OrderStatusSummary) extends Composite(orde
   val startRoomTemperatureTestButton = createButton("室溫測試")
   val startOvenTestButton = createButton("烤箱測試")
   val stopTestButton = createButton("中止測試")
-  val startDate = createDateTimeEntry("開始日期：")
-  val testedTime = createDateTimeEntry("測試時間：")
-  val startTime = createDateTimeEntry("開始時間：")
+  val startDate = createTextEntry("開始日期：")
+  val testedTime = createTextEntry("測試時間：")
+  val startTime = createTextEntry("開始時間：")
+  val currentStatus = createTextEntry("現在狀態：")
 
   def createButton(title: String) = {
     val button = new Button(groupFrame, SWT.PUSH)
@@ -100,7 +101,7 @@ class TestControl(orderStatusSummary: OrderStatusSummary) extends Composite(orde
     button
   }
 
-  def createDateTimeEntry(title: String) = {
+  def createTextEntry(title: String) = {
     val dateTimeEntry = new TextEntryField(title, true, false, groupFrame)
     val layoutData = new GridData(SWT.FILL, SWT.FILL, true, false)
     layoutData.horizontalSpan = 3
@@ -283,6 +284,7 @@ class TestControl(orderStatusSummary: OrderStatusSummary) extends Composite(orde
     startDate.setText("")
     startTime.setText("")
     testedTime.setText("")
+    currentStatus.setText("")
     stopTestButton.setEnabled(false)
     startOvenTestButton.setEnabled(false)
     startRoomTemperatureTestButton.setEnabled(true)
@@ -293,7 +295,9 @@ class TestControl(orderStatusSummary: OrderStatusSummary) extends Composite(orde
     updateTimeInfo(orderInfoHolder)
     orderInfoHolder.foreach { orderInfo =>
 
-      val isDisposed = startRoomTemperatureTestButton.isDisposed || startOvenTestButton.isDisposed || stopTestButton.isDisposed
+      val isDisposed = 
+        startRoomTemperatureTestButton.isDisposed || startOvenTestButton.isDisposed || 
+        stopTestButton.isDisposed || currentStatus.isDisposed
 
       if (!isDisposed) {
       
@@ -309,6 +313,7 @@ class TestControl(orderStatusSummary: OrderStatusSummary) extends Composite(orde
           startOvenTestButton.setEnabled(shouldEnableOvenTestButton)
           stopTestButton.setEnabled(shouldEnableStopButton)
         }
+        currentStatus.setText(orderInfo.statusDescription)
       }
     }
   }
