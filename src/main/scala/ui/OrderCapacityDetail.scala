@@ -2,17 +2,18 @@ package tw.com.zhenhai.lifetest;
 
 import zhenhai.lifetest.controller.model._
 import org.eclipse.swt._
-import org.eclipse.swt.widgets._
+import org.eclipse.swt.widgets.{List => SWTList, _}
 import org.eclipse.swt.layout._
 import org.eclipse.swt.events._
 import java.util.Date
+import java.text.SimpleDateFormat
 
 trait ChartType
 object CapacityValueChart extends ChartType
 object DXValueChart extends ChartType
 object LCValueChart extends ChartType
 
-class CapacityTestChart(title: String, testingID: Long, capacityID: Int, chartType: ChartType) {
+class CapacityTestChart(title: String, capacityID: Int, chartType: ChartType, testingResult: List[TestingResult]) {
   
   import org.jfree.data.xy.XYDataset
   import org.jfree.data.xy.XYSeries
@@ -25,7 +26,6 @@ class CapacityTestChart(title: String, testingID: Long, capacityID: Int, chartTy
   import org.jfree.chart.axis.NumberAxis
   import org.jfree.chart.axis.NumberTickUnit
 
-  lazy val testingResult = TestSetting.db.getAllTestingResult(testingID, capacityID)
   lazy val dataset = createDataSet
   lazy val chart = {
     val chart = ChartFactory.createTimeSeriesChart(title, "時間", title, dataset)
@@ -76,6 +76,92 @@ class CapacityTestChart(title: String, testingID: Long, capacityID: Int, chartTy
 
 class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, capacityID: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
+  val testingResult = TestSetting.db.getAllTestingResult(orderInfo.id, capacityID)
+
+  def createChartComposite(parent: Composite) = {
+    val composite = new Composite(parent, SWT.NONE)
+    composite.setLayout(new GridLayout(3, true))
+
+    val chart1 = new CapacityTestChart("電容值", capacityID, CapacityValueChart, testingResult)
+    val chart1Composite = chart1.createChartComposite(composite)
+    val chart1CompositeLayoutData = new GridData
+    chart1CompositeLayoutData.horizontalAlignment = GridData.FILL
+    chart1CompositeLayoutData.grabExcessHorizontalSpace = true
+    chart1CompositeLayoutData.verticalAlignment = GridData.FILL
+    chart1CompositeLayoutData.grabExcessVerticalSpace = true
+    chart1Composite.setLayoutData(chart1CompositeLayoutData)
+
+    val chart2 = new CapacityTestChart("損失角", capacityID,DXValueChart, testingResult)
+    val chart2Composite = chart2.createChartComposite(composite)
+    val chart2CompositeLayoutData = new GridData
+    chart2CompositeLayoutData.horizontalAlignment = GridData.FILL
+    chart2CompositeLayoutData.grabExcessHorizontalSpace = true
+    chart2CompositeLayoutData.verticalAlignment = GridData.FILL
+    chart2CompositeLayoutData.grabExcessVerticalSpace = true
+    chart2Composite.setLayoutData(chart2CompositeLayoutData)
+
+    val chart3 = new CapacityTestChart("漏電流", capacityID, LCValueChart, testingResult)
+    val chart3Composite = chart3.createChartComposite(composite)
+    val chart3CompositeLayoutData = new GridData
+    chart3CompositeLayoutData.horizontalAlignment = GridData.FILL
+    chart3CompositeLayoutData.grabExcessHorizontalSpace = true
+    chart3CompositeLayoutData.verticalAlignment = GridData.FILL
+    chart3CompositeLayoutData.grabExcessVerticalSpace = true
+    chart3Composite.setLayoutData(chart2CompositeLayoutData)
+
+    composite
+  }
+
+  def createDataTable(parent: Composite) = {
+    val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
+    val timeFormatter = new SimpleDateFormat("HH:mm:ss")
+    val dataTable = new Table(parent, SWT.BORDER)
+    val tableColumns = Array(
+      new TableColumn(dataTable, SWT.CENTER),   // 編號
+      new TableColumn(dataTable, SWT.CENTER),   // 時間
+      new TableColumn(dataTable, SWT.CENTER),   // 日期
+      new TableColumn(dataTable, SWT.CENTER),   // 容量值
+      new TableColumn(dataTable, SWT.CENTER)    // dx 值
+    )
+
+    tableColumns(0).setText("編號")
+    tableColumns(1).setText("日期")
+    tableColumns(2).setText("時間")
+    tableColumns(3).setText("電容值")
+    tableColumns(4).setText("DX 值")
+
+    dataTable.setHeaderVisible(true)
+    dataTable.setLinesVisible(true)
+
+    var rowCount = 1
+    val white = getDisplay.getSystemColor(SWT.COLOR_WHITE);
+
+    for (row <- testingResult) {
+      val item = new TableItem(dataTable, SWT.NONE)
+      val dateTime = new Date(row.timestamp)
+      item.setText(0, s"# $rowCount")
+      item.setText(1, dateFormatter.format(dateTime))
+      item.setText(2, timeFormatter.format(dateTime))
+      item.setText(3, "%.02f".format(row.capacity))
+      item.setText(4, "%.02f".format(row.dxValue))
+      item.setBackground(0, white)
+      item.setBackground(1, white)
+      item.setBackground(2, white)
+      item.setBackground(3, white)
+      item.setBackground(4, white)
+
+      rowCount += 1
+    }
+
+    (0 until tableColumns.size).foreach { i => 
+      val column = dataTable.getColumn(i)
+      column.pack()
+      column.setWidth(column.getWidth + 30)
+    }
+
+    dataTable
+  }
+
   def init() {
     val gridLayout = new GridLayout(3, true)
 
@@ -102,33 +188,22 @@ class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, capacityID: Int
     navigationButtonsLayoutData.horizontalAlignment = GridData.END
     navigationButtonsLayoutData.grabExcessHorizontalSpace = true
     navigationButtons.setLayoutData(navigationButtonsLayoutData)
-  
-    val chart1 = new CapacityTestChart("電容值", orderInfo.id, capacityID, CapacityValueChart)
-    val chart1Composite = chart1.createChartComposite(this)
-    val chart1CompositeLayoutData = new GridData
-    chart1CompositeLayoutData.horizontalAlignment = GridData.FILL
-    chart1CompositeLayoutData.grabExcessHorizontalSpace = true
-    chart1CompositeLayoutData.verticalAlignment = GridData.FILL
-    chart1CompositeLayoutData.grabExcessVerticalSpace = true
-    chart1Composite.setLayoutData(chart1CompositeLayoutData)
 
-    val chart2 = new CapacityTestChart("損失角", orderInfo.id, capacityID,DXValueChart)
-    val chart2Composite = chart2.createChartComposite(this)
-    val chart2CompositeLayoutData = new GridData
-    chart2CompositeLayoutData.horizontalAlignment = GridData.FILL
-    chart2CompositeLayoutData.grabExcessHorizontalSpace = true
-    chart2CompositeLayoutData.verticalAlignment = GridData.FILL
-    chart2CompositeLayoutData.grabExcessVerticalSpace = true
-    chart2Composite.setLayoutData(chart2CompositeLayoutData)
+    val tabFolder = new TabFolder(this, SWT.NONE)
+    val tabFolderLayoutData = new GridData(SWT.FILL, SWT.FILL, true, true)
+    tabFolderLayoutData.horizontalSpan = 3
+    tabFolder.setLayoutData(tabFolderLayoutData)
 
-    val chart3 = new CapacityTestChart("漏電流", orderInfo.id, capacityID, LCValueChart)
-    val chart3Composite = chart3.createChartComposite(this)
-    val chart3CompositeLayoutData = new GridData
-    chart3CompositeLayoutData.horizontalAlignment = GridData.FILL
-    chart3CompositeLayoutData.grabExcessHorizontalSpace = true
-    chart3CompositeLayoutData.verticalAlignment = GridData.FILL
-    chart3CompositeLayoutData.grabExcessVerticalSpace = true
-    chart3Composite.setLayoutData(chart2CompositeLayoutData)
+
+    val tabItem1 = new TabItem(tabFolder, SWT.NONE)
+    val tabItem2 = new TabItem(tabFolder, SWT.NONE)
+    val chartComposite = createChartComposite(tabFolder)
+    val dataTable = createDataTable(tabFolder)
+
+    tabItem1.setText("測試數據")
+    tabItem2.setText("折線圖")
+    tabItem1.setControl(dataTable)
+    tabItem2.setControl(chartComposite)
   }
 
   init()
