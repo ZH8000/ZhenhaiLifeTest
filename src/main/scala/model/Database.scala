@@ -426,7 +426,7 @@ class Database(filename: String) {
   def getScheduledTestingOrder(): List[TestingOrder] = {
     var result: List[TestingOrder] = Nil
     val currentTime = System.currentTimeMillis
-    val timeIntervalScalar = 1000 * 60
+    val timeIntervalScalar = 1000 * 10
     val statement = connection.prepareStatement(
       "SELECT * FROM TestingOrder " +
       "WHERE (lastTestTime + (?*testingInterval) < ?) " + 
@@ -617,7 +617,7 @@ class Database(filename: String) {
 
   /**
    *  新增電容烤箱測試錯誤訊息記錄
-   *
+   
    *  @param  testingID   測試單號
    *  @param  capacityID  電容編號
    *  @param  message     錯誤訊息

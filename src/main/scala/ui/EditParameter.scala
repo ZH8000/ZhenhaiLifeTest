@@ -1,11 +1,46 @@
 package tw.com.zhenhai.lifetest;
 
+import jssc.SerialPortList
+
 import org.eclipse.swt._
-import org.eclipse.swt.widgets._
+import org.eclipse.swt.widgets.{List => SWTList, _}
 import org.eclipse.swt.layout._
 import org.eclipse.swt.events._
 
 class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
+
+  def createButtonGroup() = {
+    
+    val composite = new Composite(this, SWT.NONE)
+
+    composite.setLayout(new GridLayout(2, true))
+
+    val okButton = new Button(composite, SWT.PUSH)
+    val okButtonLayoutData = new GridData
+    okButtonLayoutData.horizontalAlignment = GridData.FILL
+    okButtonLayoutData.verticalAlignment = GridData.FILL
+    okButtonLayoutData.grabExcessHorizontalSpace = true
+    okButtonLayoutData.grabExcessVerticalSpace = true
+    okButton.setLayoutData(okButtonLayoutData)
+    okButton.setText("套用")
+
+    val cancelButton = new Button(composite, SWT.PUSH)
+    val cancelButtonLayoutData = new GridData
+    cancelButtonLayoutData.horizontalAlignment = GridData.FILL
+    cancelButtonLayoutData.verticalAlignment = GridData.FILL
+    cancelButtonLayoutData.grabExcessHorizontalSpace = true
+    cancelButtonLayoutData.grabExcessVerticalSpace = true
+    cancelButton.setLayoutData(cancelButtonLayoutData)
+    cancelButton.setText("取消")
+    cancelButton.addSelectionListener(new SelectionAdapter() {
+      override def widgetSelected(e: SelectionEvent) {
+        MainWindow.appendLog("按下「確定」按鈕")
+        MainWindow.popComposite()
+      }
+    })
+
+    composite
+  }
 
   def init() = {
 
@@ -28,83 +63,53 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     navigationButtons.setLayoutData(navigationButtonsLayoutData)
 
     val group = new Group(this, SWT.SHADOW_ETCHED_IN)
-    val groupLayoutData = new GridData
-    groupLayoutData.horizontalAlignment = GridData.FILL
-    groupLayoutData.verticalAlignment = GridData.FILL
-    groupLayoutData.grabExcessHorizontalSpace = true
-    groupLayoutData.grabExcessVerticalSpace = true
+    val groupLayoutData = new GridData(GridData.FILL, GridData.FILL, true, true)
     group.setLayoutData(groupLayoutData)
-    group.setLayout(new GridLayout(2, false))
+    group.setLayout(new GridLayout(2, true))
+    group.setText("基本設定")
 
-    def createTextEntryLayoutData = {
+    val powerGroup = new Group(this, SWT.SHADOW_ETCHED_IN)
+    val powerGroupLayoutData = new GridData(GridData.FILL, GridData.FILL, true, true)
+    powerGroup.setLayoutData(powerGroupLayoutData)
+    powerGroup.setLayout(new GridLayout(1, true))
+    powerGroup.setText("電源供應器")
+
+    def createLayoutData = {
       val gridData = new GridData
       gridData.horizontalAlignment = GridData.FILL
       gridData.grabExcessHorizontalSpace = true
       gridData
     }
 
-    def createLabelLayoutData = {
-      val gridData = new GridData
-      gridData.horizontalAlignment = GridData.END
-      gridData.grabExcessHorizontalSpace = false
-      gridData
-    }
+    println("===> Serial:" + SerialPortList.getPortNames.toList)
 
-    val parameter1Label = new Label(group, SWT.RIGHT)
-    val parameter1TextEntry = new Text(group, SWT.BORDER)
-    parameter1Label.setText("參數一：")
-    parameter1Label.setLayoutData(createLabelLayoutData)
-    parameter1TextEntry.setLayoutData(createTextEntryLayoutData)
+    val daughterBoardCount = new DropdownField("子板數目：", List(1, 2, 3, 4, 5, 6, 7), group)
+    val capacityCount = new DropdownField("子板上最大電容數：", (1 to 10).toList, group)
+    val mainBoardTTY = new DropdownField("主板序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), group)
+    val lcrMeterTTY = new DropdownField("容量計序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), group)
+    val lcMeterTTY = new DropdownField("漏電流儀序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), group)
+    val powerSuppliesTTY = Array(
+      new DropdownField("電源供應器 1 序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), powerGroup),
+      new DropdownField("電源供應器 2 序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), powerGroup),
+      new DropdownField("電源供應器 3 序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), powerGroup),
+      new DropdownField("電源供應器 4 序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), powerGroup),
+      new DropdownField("電源供應器 5 序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), powerGroup),
+      new DropdownField("電源供應器 6 序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), powerGroup),
+      new DropdownField("電源供應器 7 序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), powerGroup)
+    )
+    val buttonGroup = createButtonGroup()
+    val buttonGroupLayoutData = new GridData(SWT.END, SWT.FILL, true, true)
+    buttonGroup.setLayoutData(buttonGroupLayoutData)
+    buttonGroupLayoutData.heightHint = 50
+    buttonGroupLayoutData.widthHint = 300
 
-    val parameter2Label = new Label(group, SWT.RIGHT)
-    val parameter2TextEntry = new Text(group, SWT.BORDER)
-    parameter2Label.setText("參數二：")
-    parameter2Label.setLayoutData(createLabelLayoutData)
-    parameter2TextEntry.setLayoutData(createTextEntryLayoutData)
+    daughterBoardCount.setLayoutData(createLayoutData)
+    capacityCount.setLayoutData(createLayoutData)
+    mainBoardTTY.setLayoutData(createLayoutData)
+    lcrMeterTTY.setLayoutData(createLayoutData)
+    lcMeterTTY.setLayoutData(createLayoutData)
+    powerSuppliesTTY.foreach(_.setLayoutData(createLayoutData))
 
-    val parameter3Label = new Label(group, SWT.RIGHT)
-    val parameter3TextEntry = new Text(group, SWT.BORDER)
-    parameter3Label.setText("參數三：")
-    parameter3Label.setLayoutData(createLabelLayoutData)
-    parameter3TextEntry.setLayoutData(createTextEntryLayoutData)
-
-    val parameter4Label = new Label(group, SWT.RIGHT)
-    val parameter4TextEntry = new Text(group, SWT.BORDER)
-    parameter4Label.setText("參數四：")
-    parameter4Label.setLayoutData(createLabelLayoutData)
-    parameter4TextEntry.setLayoutData(createTextEntryLayoutData)
-
-    val parameter5Label = new Label(group, SWT.RIGHT)
-    val parameter5TextEntry = new Text(group, SWT.BORDER)
-    parameter5Label.setText("參數五：")
-    parameter5Label.setLayoutData(createLabelLayoutData)
-    parameter5TextEntry.setLayoutData(createTextEntryLayoutData)
-
-    val okButton = new Button(this, SWT.PUSH)
-    val okButtonLayoutData = new GridData
-    okButtonLayoutData.horizontalAlignment = GridData.END
-    okButtonLayoutData.verticalAlignment = GridData.BEGINNING
-    okButtonLayoutData.grabExcessHorizontalSpace = true
-    okButtonLayoutData.grabExcessVerticalSpace = true
-    okButtonLayoutData.horizontalSpan = 2
-    okButtonLayoutData.heightHint = 50
-    okButtonLayoutData.widthHint = 150
-    okButton.setLayoutData(okButtonLayoutData)
-    okButton.setText("確定")
-    okButton.addSelectionListener(new SelectionAdapter() {
-      override def widgetSelected(e: SelectionEvent) {
-        MainWindow.appendLog("按下「確定」按鈕")
-        MainWindow.appendLog(s"  參數一：${parameter1TextEntry.getText}")
-        MainWindow.appendLog(s"  參數二：${parameter2TextEntry.getText}")
-        MainWindow.appendLog(s"  參數三：${parameter3TextEntry.getText}")
-        MainWindow.appendLog(s"  參數四：${parameter4TextEntry.getText}")
-        MainWindow.appendLog(s"  參數五：${parameter5TextEntry.getText}")
-        MainWindow.popComposite()
-      }
-    })
-
-    MainWindow.mainWindowShell.setDefaultButton(okButton)
-    okButton.setFocus()
   }
 
   init()
