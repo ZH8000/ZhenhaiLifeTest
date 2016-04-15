@@ -22,7 +22,20 @@ object Main {
 
   val mainBoard = new MainBoard(mainBoardPort)
   val lcrMeter = new LCRMeter(lcrMeterPort)
-  val powerSupplies: Map[Int, GENH600] = powerSuppliesPort.map { case (daughterBoard, port) => (daughterBoard, new GENH600(port)) }
+  val powerSupplies: Map[Int, PowerSupplyInterface] = {
+    var result: Map[Int, PowerSupplyInterface] = Map.empty
+    for (daughterBoard <- 0 until daughterBoardCount) {
+
+      val powerSupply: PowerSupplyInterface = powerSuppliesPort.get(daughterBoard) match {
+        case None       => new DummyPowerSupply(daughterBoard)
+        case Some(port) => new GENH600(port)
+      }
+
+      result += (daughterBoard -> powerSupply)
+    }
+    result
+  }
+
   var powerSuppliesStatus: Map[Int, PowerSupplyStatus] = Map.empty
   
   /**
@@ -40,18 +53,21 @@ object Main {
     testingOrderHolder match {
       case None => db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 2))
       case Some(testingOrder) =>
+
         println("  ==> 測試單：" + testingOrder)
+        val daughterBoard = testingOrder.daughterBoard
+        val testingBoard = testingOrder.testingBoard
 
         val initialCheckingAndUUID = for {
-          //powerSupply           <- Try(powerSupplies(testingOrder.daughterBoard))
-          isHVRelayOK            <- mainBoard.isHVRelayOK(testingOrder.daughterBoard, testingOrder.testingBoard) if isHVRelayOK
-          disableChargeDischarge <- mainBoard.setChargeMode(rtDaughterBoard, rtTestingBoard, 0)
-          //setVoltage        <- powerSupply.setVoltage(testingOrder.voltage)
-          uuid                   <- mainBoard.getUUID(0, 0)
-          enableCharge           <- mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, 1)
-          disableLCRChannel      <- mainBoard.setLCRChannel(testingOrder.daughterBoard, testingOrder.testingBoard, 0)
-          disableLCChannel       <- mainBoard.setLCChannel(testingOrder.daughterBoard, testingOrder.testingBoard, 0)
-        } yield (uuid, null)//, powerSupply)
+          powerSupply             <- Try(powerSupplies(testingOrder.daughterBoard))
+          isHVRelayOK             <- mainBoard.isHVRelayOK(daughterBoard, testingBoard) if isHVRelayOK
+          disableChargeDischarge  <- mainBoard.setChargeMode(daughterBoard, testingBoard, 0)
+          setVoltage              <- powerSupply.setVoltage(testingOrder.voltage)
+          uuid                    <- mainBoard.getUUID(0, 0)
+          enableCharge            <- mainBoard.setChargeMode(daughterBoard, testingBoard, 1)
+          disableLCRChannel       <- mainBoard.setLCRChannel(daughterBoard, testingBoard, 0)
+          disableLCChannel        <- mainBoard.setLCChannel(daughterBoard, testingBoard, 0)
+        } yield (uuid, powerSupply)
 
         initialCheckingAndUUID match {
           case Failure(e: NoSuchElementException) => db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 3))
@@ -59,13 +75,13 @@ object Main {
           case Failure(MainBoardRS232Timeout)     => db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 5))
           case Failure(PowerSupplyRS232Timeout)   => db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 6))
           case Failure(_)                         => db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 7))
-          case Success((uuid, powerSupply)) if uuid != testingOrder.tbUUID => 
-            db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 8))
+          case Success((uuid,_)) if uuid != testingOrder.tbUUID => db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 8))
           case Success((uuid, powerSupply)) if uuid == testingOrder.tbUUID => 
             val currentTimestamp = System.currentTimeMillis
-            //powerSupply.setOutput(true)
+            powerSupply.setOutput(true)
             db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 9))
             db.updateTestingOrder(testingOrder.copy(currentStatus = 1, startTime = currentTimestamp, lastTestTime = currentTimestamp))
+            db.insertOvenTestingQueue(testingOrder.id)
         }
     }
   }

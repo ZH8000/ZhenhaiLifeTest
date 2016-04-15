@@ -41,7 +41,7 @@ class CapacityTestChart(title: String, testingID: Long, capacityID: Int, chartTy
     val series = new TimeSeries(title)
     for (row <- testingResult) {
       val timestamp = new Date(row.timestamp)
-      series.add(new Minute(timestamp) , row.dxValue)
+      series.add(new Second(timestamp) , row.dxValue)
     }
     new TimeSeriesCollection(series)
   }
@@ -50,7 +50,7 @@ class CapacityTestChart(title: String, testingID: Long, capacityID: Int, chartTy
     val series = new TimeSeries(title)
     for (row <- testingResult) {
       val timestamp = new Date(row.timestamp)
-      series.add(new Minute(timestamp) , row.capacity)
+      series.add(new Second(timestamp) , row.capacity)
     }
     new TimeSeriesCollection(series)
   }

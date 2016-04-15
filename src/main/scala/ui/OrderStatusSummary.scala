@@ -35,9 +35,9 @@ object TestSetting {
 
 
 
-class DropdownField[T](title: String, selection: List[T], parent: Composite) extends Composite(parent, SWT.NONE) {
-  val gridLayout = new GridLayout(2, false)
-  val titleLabel = new Label(this, SWT.NONE)
+class DropdownField[T](title: String, selection: List[T], parent: Composite, equalWidth: Boolean = false) extends Composite(parent, SWT.NONE) {
+  val gridLayout = new GridLayout(2, equalWidth)
+  val titleLabel = new Label(this, SWT.END)
   val combo = new Combo(this, SWT.DROP_DOWN|SWT.BORDER|SWT.READ_ONLY)
 
   gridLayout.verticalSpacing = 10
