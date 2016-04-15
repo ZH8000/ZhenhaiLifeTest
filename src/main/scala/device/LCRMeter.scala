@@ -39,6 +39,8 @@ case class LCRResult(capacityValue: BigDecimal, capacityStatus: String, dxValue:
     val (lowerBound, higherBound) = codeToMargin(marginOfError)
     capacityValue >= standardCapacity + (standardCapacity * lowerBound) &&
     capacityValue <= standardCapacity + (standardCapacity * higherBound)
+
+    true
   }
 
   def isDXValueOK(standardDXValue: BigDecimal, marginOfError: String) = {

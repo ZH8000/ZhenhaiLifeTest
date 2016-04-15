@@ -426,7 +426,7 @@ class Database(filename: String) {
   def getScheduledTestingOrder(): List[TestingOrder] = {
     var result: List[TestingOrder] = Nil
     val currentTime = System.currentTimeMillis
-    val timeIntervalScalar = 1000 * 10
+    val timeIntervalScalar = 1000 * 60
     val statement = connection.prepareStatement(
       "SELECT * FROM TestingOrder " +
       "WHERE (lastTestTime + (?*testingInterval) < ?) " + 

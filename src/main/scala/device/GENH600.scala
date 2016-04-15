@@ -5,6 +5,54 @@ import jssc.SerialPortEvent
 import jssc.SerialPortEventListener
 import scala.util.Try
 
+trait PowerSupplyInterface {
+
+  def setVoltage(voltage: Double): Try[Boolean]
+  def setOutput(isOutput: Boolean): Try[Boolean]
+  def getVoltageSetting(): Try[Double]
+  def getIsOutput(): Try[Boolean]
+  def open(): Try[Boolean]
+  def close(): Unit
+
+}
+
+class DummyPowerSupply(daughterBoard: Int) extends PowerSupplyInterface {
+
+  var voltage: Double = 0
+  var isOutput: Boolean = false 
+  def setVoltage(voltage: Double): Try[Boolean] = Try { 
+    this.voltage = voltage
+    println(s"Set voltage to $voltage in $daughterBoard dummy....")
+    true
+  }
+
+  def setOutput(isOutput: Boolean): Try[Boolean] = Try {
+    println(s"Set isOutput to $isOutput in $daughterBoard dummy....")
+    this.isOutput = isOutput
+    true
+  }
+
+  def getVoltageSetting(): Try[Double] = Try {
+    println(s"Reply voltage for $daughterBoard: $voltage")
+    voltage
+  }
+
+  def getIsOutput(): Try[Boolean] = Try {
+    println(s"Reply isOutput for $daughterBoard: $isOutput")
+    isOutput
+  }
+
+  def open(): Try[Boolean] = Try {
+    println(s"Open dummy power supply for $daughterBoard")
+    true
+  }
+  def close(): Unit = {
+    println(s"Close dummy power supply for $daughterBoard")
+  }
+
+}
+
+
 /**
  *  GENH600 電源供應器的 RS232 介面
  *
@@ -13,7 +61,7 @@ import scala.util.Try
  *  @param    baudRate          連接速率
  *  @param    waitForResponse   送出指令的等待間隔
  */
-class GENH600(port: String, deviceAddress: Int = 0, baudRate: Int = SerialPort.BAUDRATE_9600, waitForResponse: Int = 300) {
+class GENH600(port: String, deviceAddress: Int = 0, baudRate: Int = SerialPort.BAUDRATE_9600, waitForResponse: Int = 300) extends PowerSupplyInterface{
 
   val serialPort = new SerialPort(port)
   var responseMessage: Option[String] = None
