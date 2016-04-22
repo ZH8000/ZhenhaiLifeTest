@@ -22,6 +22,7 @@ class CapacityTestChart(title: String, capacityID: Int, chartType: ChartType, te
   import org.jfree.chart.ChartFactory
   import org.jfree.experimental.chart.swt.ChartComposite
   import org.jfree.chart.plot.PlotOrientation
+  import org.jfree.chart.plot.XYPlot
   import java.awt.Color
   import org.jfree.chart.axis.NumberAxis
   import org.jfree.chart.axis.NumberTickUnit
@@ -33,6 +34,10 @@ class CapacityTestChart(title: String, capacityID: Int, chartType: ChartType, te
     rangeAxis.setUpperBound(rangeAxis.getUpperBound + 2)
     rangeAxis.setLowerBound(rangeAxis.getLowerBound - 2)
     rangeAxis.setTickUnit(new NumberTickUnit(0.5))
+    val plot = chart.getPlot.asInstanceOf[XYPlot]
+    val renderer = plot.getRenderer.asInstanceOf[org.jfree.chart.renderer.xy.XYLineAndShapeRenderer]
+    renderer.setSeriesLinesVisible(0, true)
+    renderer.setSeriesShapesVisible(0, true)
     chart.setBackgroundPaint(Color.LIGHT_GRAY)
     chart
   }
@@ -66,7 +71,7 @@ class CapacityTestChart(title: String, capacityID: Int, chartType: ChartType, te
   }
 
   def createChartComposite(parent: Composite) = {
-    val composite = new ChartComposite(parent, SWT.NONE, chart, true)
+    val composite = new ChartComposite(parent, SWT.NONE, chart, false, false, false, false, true)
     composite.setDomainZoomable(false)
     composite.setRangeZoomable(false)
     composite
@@ -167,8 +172,8 @@ class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, capacityID: Int
 
     gridLayout.horizontalSpacing = 20
     gridLayout.verticalSpacing = 20
-    gridLayout.marginWidth = 200
-    gridLayout.marginHeight = 200
+    // gridLayout.marginWidth = 200
+    // gridLayout.marginHeight = 200
 
     this.setLayout(gridLayout)
 

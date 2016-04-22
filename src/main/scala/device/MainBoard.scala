@@ -19,12 +19,12 @@ class MainBoard(port: String, baudRate: Int = SerialPort.BAUDRATE_9600, waitForR
 
   def getResponse(): Try[String] = Try {
     var numberOfTries = 0
-    while ((dataResultHolder.isEmpty) && numberOfTries <= 10) {
+    while ((dataResultHolder.isEmpty) && numberOfTries <= 100) {
       numberOfTries += 1
       Thread.sleep(waitForResponse)
     }
 
-    if (numberOfTries > 10) {
+    if (numberOfTries > 100) {
       throw MainBoardRS232Timeout
     } else {
       val result = dataResultHolder.get

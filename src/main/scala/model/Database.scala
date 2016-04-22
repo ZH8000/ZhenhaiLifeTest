@@ -55,10 +55,14 @@ class Database(filename: String) {
   def initDB() {
     if (getTables.size == 0) {
       println("Creating Database Tables....")
-      for (createTableSQL <- getDBSchemaList) {
+      for (createTableSQL <- getDBSchemaList.filter(_.trim.size > 0)) {
         val statement = connection.prepareStatement(createTableSQL)
+        println("===================")
+        println("Start create table...")
+        println(createTableSQL)
         statement.executeUpdate()
         statement.close()
+        println("===================")
       }
     }
   }
