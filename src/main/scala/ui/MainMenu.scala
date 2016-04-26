@@ -12,8 +12,8 @@ class MainMenu(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NO
 
     gridLayout.horizontalSpacing = 20
     gridLayout.verticalSpacing = 20
-    gridLayout.marginWidth = 200
-    gridLayout.marginHeight = 200
+    // gridLayout.marginWidth = 200
+    // gridLayout.marginHeight = 200
 
     this.setLayout(gridLayout)
 

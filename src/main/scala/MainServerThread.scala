@@ -1,24 +1,34 @@
+package tw.com.zhenhai.lifetest
+
 import zhenhai.lifetest.controller.model._
 import zhenhai.lifetest.controller.device._
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import java.util.NoSuchElementException
+import org.slf4j.LoggerFactory
 
 case class PowerSupplyStatus(isOutput: Boolean, voltage: Double)
 
-object Main {
+class MainServerThread extends Thread {
 
-  val mainBoardPort = "/dev/ttyUSB1"
-  val lcrMeterPort = "/dev/ttyUSB2"
-  val powerSuppliesPort: Map[Int, String] = Map.empty //(0 -> "/dev/ttyUSB3")
+
+  var shouldStopped = false
+  val logger = LoggerFactory.getLogger("LifeTest")
+
+  val frontUp  = "/dev/serial/by-path/pci-0000:00:10.1-usb-0:1:1.0-port0"
+  val backUp   = "/dev/serial/by-path/pci-0000:00:10.0-usb-0:1:1.0-port0"
+  val backDown = "/dev/serial/by-path/pci-0000:00:10.0-usb-0:2:1.0-port0"
+  val mainBoardPort = frontUp
+  val lcrMeterPort = backUp
+  val powerSuppliesPort: Map[Int, String] = Map(0 -> backDown)
 
   val daughterBoardCount = 3    // 總共有幾組測試子板
   val capaciyCount = 3         // 一組的電容有幾顆
   val rtDaughterBoard = 0       // 室溫測試板的子板編號
   val rtTestingBoard = 0        // 室溫測試板的烤箱板編號
 
-  val db = new Database("sample.db")
+  val db = TestSetting.db
 
   val mainBoard = new MainBoard(mainBoardPort)
   val lcrMeter = new LCRMeter(lcrMeterPort)
@@ -44,7 +54,7 @@ object Main {
    *  @param    request     烤箱板 UUID 確認佇列的內容
    */
   def checkOvenUUID(request: OvenUUIDCheckingQueue) {
-    println("  ==> 烤箱 UUID 確認")
+    logger.info("  ==> 烤箱 UUID 確認")
 
     val testingOrderHolder = db.getTestingOrder(request.testingID)
 
@@ -54,13 +64,14 @@ object Main {
       case None => db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 2))
       case Some(testingOrder) =>
 
-        println("  ==> 測試單：" + testingOrder)
+        logger.info("  ==> 測試單：" + testingOrder)
         val daughterBoard = testingOrder.daughterBoard
         val testingBoard = testingOrder.testingBoard
 
         val initialCheckingAndUUID = for {
           powerSupply             <- Try(powerSupplies(testingOrder.daughterBoard))
-          isHVRelayOK             <- mainBoard.isHVRelayOK(daughterBoard, testingBoard) if isHVRelayOK
+          isHVRelayOK             <- mainBoard.isHVRelayOK(daughterBoard, testingBoard) //! if isHVRelayOK
+          setPowerOff             <- powerSupply.setOutput(false)
           disableChargeDischarge  <- mainBoard.setChargeMode(daughterBoard, testingBoard, 0)
           setVoltage              <- powerSupply.setVoltage(testingOrder.voltage)
           uuid                    <- mainBoard.getUUID(0, 0)
@@ -70,11 +81,21 @@ object Main {
         } yield (uuid, powerSupply)
 
         initialCheckingAndUUID match {
-          case Failure(e: NoSuchElementException) => db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 3))
-          case Failure(TestBoardNotFound)         => db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 4))
-          case Failure(MainBoardRS232Timeout)     => db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 5))
-          case Failure(PowerSupplyRS232Timeout)   => db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 6))
-          case Failure(_)                         => db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 7))
+          case Failure(e: NoSuchElementException) => 
+            db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 3))
+            db.insertOvenTestingErrorLog(testingOrder.id, -1, e.toString)
+          case Failure(TestBoardNotFound)         => 
+            db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 4))
+            db.insertOvenTestingErrorLog(testingOrder.id, -1, TestBoardNotFound.toString)
+          case Failure(MainBoardRS232Timeout)     => 
+            db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 5))
+            db.insertOvenTestingErrorLog(testingOrder.id, -1, MainBoardRS232Timeout.toString)
+          case Failure(PowerSupplyRS232Timeout)   => 
+            db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 6))
+            db.insertOvenTestingErrorLog(testingOrder.id, -1, PowerSupplyRS232Timeout.toString)
+          case Failure(e)                         => 
+            db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 7))
+            db.insertOvenTestingErrorLog(testingOrder.id, -1, e.toString)
           case Success((uuid,_)) if uuid != testingOrder.tbUUID => db.updateOvenUUIDCheckingQueue(request.copy(currentStatus = 8))
           case Success((uuid, powerSupply)) if uuid == testingOrder.tbUUID => 
             val currentTimestamp = System.currentTimeMillis
@@ -83,6 +104,7 @@ object Main {
             db.updateTestingOrder(testingOrder.copy(currentStatus = 1, startTime = currentTimestamp, lastTestTime = currentTimestamp))
             db.insertOvenTestingQueue(testingOrder.id)
         }
+        powerSuppliesStatus = powerSuppliesStatus.updated(daughterBoard, PowerSupplyStatus(false, 0))
     }
   }
 
@@ -101,7 +123,7 @@ object Main {
 
     for (capacityID <- capacityList) {
 
-      println(s"    ==> 測試編號 $capacityID 的電容")
+      logger.info(s"    ==> 測試編號 $capacityID 的電容")
 
       lcrMeter.setRange(testingOrder.capacity)
 
@@ -110,7 +132,7 @@ object Main {
         lcrResult  <- lcrMeter.startMeasure()
       } yield lcrResult
 
-      println(testingResult)
+      logger.info(testingResult.toString)
 
       testingResult match {
         case Failure(e) if isInRoomTemperature  => db.insertRoomTemperatureTestingErrorLog(testingOrder.id, capacityID, e.toString)
@@ -120,7 +142,8 @@ object Main {
           val isDXValueOK = result.isDXValueOK(testingOrder.capacity, testingOrder.marginOfError)
           val isLeakCurrentOK = true
           //val isOK = isCapacityOK && isDXValueOK && isLeakCurrentOK
-          val isOK = result.capacityValue != 0 
+          //val isOK = result.capacityValue != 0 
+          val isOK = true
           val testingResult = TestingResult(
             testingOrder.id, capacityID, 
             result.capacityValue.toDouble, result.dxValue.toDouble, 
@@ -145,7 +168,7 @@ object Main {
    *  @param    request     室溫初始測試的佇列資料
    */
   def runRoomTemperatureTesting(request: RoomTemperatureTestingQueue) {
-    println("  ==> 室溫初始測試")
+    logger.info("  ==> 室溫初始測試")
 
     val testingOrderHolder = db.getTestingOrder(request.testingID)
 
@@ -155,26 +178,38 @@ object Main {
       case None => db.updateRoomTemperatureTestingQueue(request.copy(currentStatus = 2))
       case Some(testingOrder) =>
 
-        println("  ==> 測試單：" + testingOrder)
+        logger.info("  ==> 測試單：" + testingOrder)
 
         val initialCheckingAndUUID = for {
-          isHVRelayOK            <- mainBoard.isHVRelayOK(rtDaughterBoard, rtTestingBoard) if isHVRelayOK
+          powerSupply            <- Try(powerSupplies(testingOrder.daughterBoard))
+          setPowerOff            <- powerSupply.setOutput(false)
+          isHVRelayOK            <- mainBoard.isHVRelayOK(rtDaughterBoard, rtTestingBoard) //! if isHVRelayOK
           disableChargeDischarge <- mainBoard.setChargeMode(rtDaughterBoard, rtTestingBoard, 0)
           uuid <- mainBoard.getUUID(0, 0)
-        } yield uuid
+        } yield (uuid, powerSupply)
 
-        println("  ==> " + initialCheckingAndUUID)
+        logger.info("  ==> " + initialCheckingAndUUID)
 
         initialCheckingAndUUID match {
-          case Failure(e: NoSuchElementException) => db.updateRoomTemperatureTestingQueue(request.copy(currentStatus = 3))
-          case Failure(TestBoardNotFound)         => db.updateRoomTemperatureTestingQueue(request.copy(currentStatus = 4))
-          case Failure(MainBoardRS232Timeout)     => db.updateRoomTemperatureTestingQueue(request.copy(currentStatus = 5))
-          case Failure(_)     => db.updateRoomTemperatureTestingQueue(request.copy(currentStatus = 6))
-          case Success(uuid)  => 
+          case Failure(e: NoSuchElementException) => 
+            db.updateRoomTemperatureTestingQueue(request.copy(currentStatus = 3))
+            db.insertRoomTemperatureTestingErrorLog(testingOrder.id, -1, e.toString)
+          case Failure(TestBoardNotFound)         => 
+            db.updateRoomTemperatureTestingQueue(request.copy(currentStatus = 4))
+            db.insertRoomTemperatureTestingErrorLog(testingOrder.id, -1, TestBoardNotFound.toString)
+          case Failure(MainBoardRS232Timeout)     => 
+            db.updateRoomTemperatureTestingQueue(request.copy(currentStatus = 5))
+            db.insertRoomTemperatureTestingErrorLog(testingOrder.id, -1, MainBoardRS232Timeout.toString)
+          case Failure(e)     => 
+            db.updateRoomTemperatureTestingQueue(request.copy(currentStatus = 6))
+            db.insertRoomTemperatureTestingErrorLog(testingOrder.id, -1, e.toString)
+          case Success((uuid, powerSupply))  => 
             startLCRMeasurement(testingOrder, true)
             db.updateRoomTemperatureTestingQueue(request.copy(currentStatus = 7))
             db.updateTestingOrder(testingOrder.copy(tbUUID = uuid, isRoomTemperatureTested = true))
         }
+        powerSuppliesStatus = powerSuppliesStatus.updated(testingOrder.daughterBoard, PowerSupplyStatus(false, 0))
+
     }
   }
 
@@ -184,7 +219,7 @@ object Main {
    *  @param    request     烤箱測試的佇列資料
    */
   def runOvenTesting(request: OvenTestingQueue) {
-    println("  ==> 烤箱測試")
+    logger.info("  ==> 烤箱測試")
 
     val testingOrderHolder = db.getTestingOrder(request.testingID)
 
@@ -192,30 +227,53 @@ object Main {
       case None => // 如果找不到測試單，自動忽略任何動作，因為之後會把 OvenTestingQueue 裡的東西刪掉，因此不需特別處理
       case Some(testingOrder) =>
 
-        println("  ==> 測試單：" + testingOrder)
+        logger.info("  ==> 測試單：" + testingOrder)
+        logger.info("  ==> testingOrder.currentStatus:" + testingOrder.currentStatus)
 
-        db.updateTestingOrder(testingOrder.copy(lastTestTime = System.currentTimeMillis, currentStatus = 1))
+        // 有可能測試已經排入烤箱測試佇列後，使用者又在 GUI 上將此測試單取消，或總時間已經到了，
+        // 因此在進行烤箱測試前，需先排除這兩個狀態，否則會造成此測試單回復成「測試中」的狀態，
+        // 而無法中止。
+        if (testingOrder.currentStatus != 6 && testingOrder.currentStatus != 7) {
+          
+          logger.info("  ==> 真的開始測試")
+          db.updateTestingOrder(testingOrder.copy(lastTestTime = System.currentTimeMillis, currentStatus = 1))
 
-        val initialCheckingAndUUID = for {
-          isHVRelayOK     <- mainBoard.isHVRelayOK(testingOrder.daughterBoard, testingOrder.testingBoard) if isHVRelayOK
-          enableDischarge <- mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, 2, 10)
-          disableChargeDischarge <- mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, 0)
-          uuid            <- mainBoard.getUUID(0, 0)
-        } yield uuid
+          val initialCheckingAndUUID = for {
+            powerSupply     <- Try(powerSupplies(testingOrder.daughterBoard))
+            setPowerOff     <- powerSupply.setOutput(false)
+            isHVRelayOK     <- mainBoard.isHVRelayOK(testingOrder.daughterBoard, testingOrder.testingBoard) //! if isHVRelayOK
+            enableDischarge <- mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, 2, 10)
+            disableChargeDischarge <- mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, 0)
+            uuid            <- mainBoard.getUUID(0, 0)
+          } yield uuid
 
-        println(initialCheckingAndUUID)
+          logger.info(initialCheckingAndUUID.toString)
 
-        initialCheckingAndUUID match {
-          case Failure(e: NoSuchElementException) => db.updateTestingOrder(testingOrder.copy(currentStatus = 2))
-          case Failure(TestBoardNotFound)         => db.updateTestingOrder(testingOrder.copy(currentStatus = 3))
-          case Failure(MainBoardRS232Timeout)     => db.updateTestingOrder(testingOrder.copy(currentStatus = 4))
-          case Failure(_)                         => db.updateTestingOrder(testingOrder.copy(currentStatus = 5))
-          case Success(uuid) if uuid != testingOrder.tbUUID => db.updateTestingOrder(testingOrder.copy(currentStatus = 6))
-          case Success(uuid) => 
-            startLCRMeasurement(testingOrder, false)
-            mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, 1)
+          initialCheckingAndUUID match {
+            case Failure(e: NoSuchElementException) => 
+              db.updateTestingOrder(testingOrder.copy(currentStatus = 2))
+              db.insertOvenTestingErrorLog(testingOrder.id, -2, e.toString)
+            case Failure(TestBoardNotFound)         => 
+              db.updateTestingOrder(testingOrder.copy(currentStatus = 3))
+              db.insertOvenTestingErrorLog(testingOrder.id, -2, TestBoardNotFound.toString)
+            case Failure(MainBoardRS232Timeout)     => 
+              db.updateTestingOrder(testingOrder.copy(currentStatus = 4))
+              db.insertOvenTestingErrorLog(testingOrder.id, -2, MainBoardRS232Timeout.toString)
+            case Failure(e)                         => 
+              db.updateTestingOrder(testingOrder.copy(currentStatus = 5))
+              db.insertOvenTestingErrorLog(testingOrder.id, -2, e.toString)
+            case Success(uuid) if uuid != testingOrder.tbUUID => 
+              db.updateTestingOrder(testingOrder.copy(currentStatus = 6))
+              db.insertOvenTestingErrorLog(testingOrder.id, -2, "UUID Not match")
+            case Success(uuid) => 
+              startLCRMeasurement(testingOrder, false)
+              mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, 1)
+          }
+
+        } else {
+          logger.info("  ==> 這是已完成或已中止的測試單")
         }
-
+        powerSuppliesStatus = powerSuppliesStatus.updated(testingOrder.daughterBoard, PowerSupplyStatus(false, 0))
         db.deleteOvenTestingQueue(request.testingID)
     }
 
@@ -227,7 +285,7 @@ object Main {
   def markTestingOrderCompleted() {
     val completedTestingOrders = db.getCompletedTestingOrder
     completedTestingOrders.foreach { testingOrder =>
-      println(s"  ==> 已完成測試單 ${testingOrder.id}，標記為已完成。")
+      logger.info(s"  ==> 已完成測試單 ${testingOrder.id}，標記為已完成。")
       db.updateTestingOrder(testingOrder.copy(currentStatus = 7))
     }
   }
@@ -238,7 +296,7 @@ object Main {
   def scheduleTestingOrder() {
     val scheduledTestingOrders = db.getScheduledTestingOrder
     scheduledTestingOrders.foreach { testingOrder =>
-      println(s"  ==> 排程測試單：${testingOrder.id}")
+      logger.info(s"  ==> 排程測試單：${testingOrder.id}")
       db.insertOvenTestingQueue(testingOrder.id)
     }
 
@@ -257,7 +315,7 @@ object Main {
       rs232Interface.open() 
       val currentVoltageSetting = rs232Interface.getVoltageSetting.getOrElse(0D)
       val currentOutputSetting = rs232Interface.getIsOutput.getOrElse(false)
-      println(s"===> currentVol: $currentVoltageSetting, $currentOutputSetting")
+      logger.info(s"===> currentVol: $currentVoltageSetting, $currentOutputSetting")
       powerSuppliesStatus += (daughterBoard -> PowerSupplyStatus(currentOutputSetting, currentVoltageSetting))
     }
   }
@@ -277,16 +335,16 @@ object Main {
       currentStatus <- powerSuppliesStatus.get(daughterBoard)
       powerSupply <- powerSupplies.get(daughterBoard) if currentStatus.isOutput == false || currentStatus.voltage != voltage
     } {
-      print(s"  ==> 設定 $daughterBoard 電壓到 $voltage：")
-      println(powerSupply.setVoltage(voltage))
-      print(s"  ==> 開啟 $daughterBoard 電壓輸出：")
-      println(powerSupply.setOutput(true))
+      logger.info(s"  ==> 設定 $daughterBoard 電壓到 $voltage：")
+      logger.info(powerSupply.setVoltage(voltage).toString)
+      logger.info(s"  ==> 開啟 $daughterBoard 電壓輸出：")
+      logger.info(powerSupply.setOutput(true).toString)
 
       for {
         newVoltage <- powerSupply.getVoltageSetting
         newOutputState <- powerSupply.getIsOutput
       } {
-        println(s" ==> 更新 $daughterBoard 電源供應器狀態")
+        logger.info(s" ==> 更新 $daughterBoard 電源供應器狀態")
         powerSuppliesStatus = powerSuppliesStatus.updated(daughterBoard, PowerSupplyStatus(newOutputState, newVoltage))
       }
 
@@ -311,35 +369,34 @@ object Main {
       currentStatus <- powerSuppliesStatus.get(daughterBoard)
       powerSupply   <- powerSupplies.get(daughterBoard) if (currentStatus.isOutput != false || currentStatus.voltage != 0)
     } {
-      print(s"  ==> 設定 $daughterBoard 電壓到 0V：")
-      println(powerSupply.setVoltage(0))
-      print(s"  ==> 關閉 $daughterBoard 電壓輸出：")
-      println(powerSupply.setOutput(false))
+      logger.info(s"  ==> 設定 $daughterBoard 電壓到 0V：")
+      logger.info(powerSupply.setVoltage(0).toString)
+      logger.info(s"  ==> 關閉 $daughterBoard 電壓輸出：")
+      logger.info(powerSupply.setOutput(false).toString)
         
       for {
         newVoltage <- powerSupply.getVoltageSetting
         newOutputState <- powerSupply.getIsOutput
       } {
-        println(s" ==> 更新 $daughterBoard 電源供應器狀態")
+        logger.info(s" ==> 更新 $daughterBoard 電源供應器狀態")
         powerSuppliesStatus = powerSuppliesStatus.updated(daughterBoard, PowerSupplyStatus(newOutputState, newVoltage))
       }
     }
 
   }
 
-  def main(args: Array[String]) {
+  override def run() {
 
     var count = 0
 
     mainBoard.open()
     lcrMeter.open()
     initilizePowerSupplies()
+    logger.info("初始化電源供應器及設備完成……")
 
-    while(true) {
+    while(!shouldStopped) {
 
-      if (count % 100 == 0) {
-        println(s"==> 進入主迴圈[${count / 100}]")
-      }
+      //logger.info(s"==> 進入主迴圈[${count}]")
 
       val ovenUUIDCheckingRequest = db.getOvenUUIDCheckingQueue
       val roomTemperatureTestingRequest = db.getRoomTemperatureTestingQueue

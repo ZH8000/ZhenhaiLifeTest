@@ -11,8 +11,12 @@ import java.util.concurrent._
 import scala.util.Try
 
 object TestSetting {
+
+  Class.forName("org.sqlite.JDBC")
+
+  val databasePath = "/home/zhenhai/test.db"
   val voltageList = List(4, 6.3, 10, 16, 25, 35, 50, 63, 80, 100, 160, 200, 220, 250, 315, 350, 400, 420, 450, 500)
-  val testingTimeList = List(100, 500, 1000, 1500, 2000, 2500, 3000, 4000, 5000)
+  val testingTimeList = List(100, 500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 500000)
   val capacityList = List(
     0.1, 0.22, 0.33, 0.47, 1, 2.2, 3.3, 4.7, 6.8, 10, 15, 18, 22,
     27, 33, 39, 47, 56, 68, 82, 100, 120, 150, 180, 220, 270, 330,
@@ -22,15 +26,14 @@ object TestSetting {
   val marginOfErrorList = List("A: 0 ~ +20", "B: -20 ~ 0", "D: -25 ~ +20", "K: -10 ~ +10", "M: -20 ~ +20", "Y: -10 ~ +20")
   val leakCurrentList = List("I=0.01CV or 3uA", "I=0.03CV or 4uA", "I=0.1CV+40", "I=0.04CV+100", "I=0.06CV+10uA", "I=0.03CV or 3uA")
   val dxList = List(0.08, 0.09, 0.1, 0.12, 0.14, 0.15, 0.16, 0.19, 0.2, 0.22, 0.24, 0.25, 0.28)
-  val intervalList = List(1, 2, 3, 5, 6, 10, 12, 24, 50)
+  val intervalList = List(1, 2, 3, 5, 6, 10, 12, 24, 50, 60, 120, 180, 300, 360, 600, 720, 1440, 3000)
 
   def marginOfErrorCodeToFullText(code: String) = {
     marginOfErrorList.filter(_.startsWith(code))(0)
   }
 
-  Class.forName("org.sqlite.JDBC")
 
-  val db = new Database("sample.db")
+  val db = new Database(databasePath)
 }
 
 
@@ -875,8 +878,8 @@ class OrderStatusSummary(var isNewOrder: Boolean, val blockNo: Int, val daughter
 
     gridLayout.horizontalSpacing = 20
     gridLayout.verticalSpacing = 20
-    gridLayout.marginWidth = 200
-    gridLayout.marginHeight = 200
+    // gridLayout.marginWidth = 200
+    // gridLayout.marginHeight = 200
 
     this.setLayout(gridLayout)
     updateInfo()

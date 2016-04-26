@@ -13,8 +13,8 @@ class HistoryQueryResult(mainWindowShell: Shell, title: String) extends Composit
 
     gridLayout.horizontalSpacing = 20
     gridLayout.verticalSpacing = 20
-    gridLayout.marginWidth = 200
-    gridLayout.marginHeight = 200
+    // gridLayout.marginWidth = 200
+    // gridLayout.marginHeight = 200
 
     this.setLayout(gridLayout)
 
