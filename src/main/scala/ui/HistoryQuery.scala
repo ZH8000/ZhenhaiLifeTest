@@ -36,8 +36,8 @@ class HistoryQuery(mainWindowShell: Shell) extends Composite(mainWindowShell, SW
     calendar.setLayoutData(calendarLayoutData)
     calendar.addListener(SWT.DefaultSelection, new Listener() {
       override def handleEvent(e: Event) {
-        val queryDate = s"${calendar.getYear}-${calendar.getMonth}-${calendar.getDay}"
-        val queryResultWindow = new HistoryQueryResult(MainWindow.mainWindowShell, s"查詢日期：$queryDate")
+        val queryDate = f"${calendar.getYear}-${calendar.getMonth+1}%02d-${calendar.getDay}%02d"
+        val queryResultWindow = new HistoryQueryResult(MainWindow.mainWindowShell, queryDate)
         MainWindow.appendLog(s"點選「$queryDate」")
         MainWindow.pushComposite(queryResultWindow)
       }

@@ -701,6 +701,41 @@ class Database(filename: String) {
     (goodCapacity -- damagedCapacity).size
   }
 
+  def getTestingForDate(dateString: String): List[TestingOrder] = {
+    println("===> dateString:" + dateString)
+    var result: List[TestingOrder] = Nil
+    val statement = connection.prepareStatement(
+      "SELECT *, date(startTime/1000, 'unixepoch') as startDate, date(lastTestTime/1000, 'unixepoch') as lastDate " +
+      "FROM TestingOrder where startDate <= ? AND lastDate >= ?"
+    )
+    statement.setString(1, dateString)
+    statement.setString(2, dateString)
+    val cursor = statement.executeQuery()
+    while (cursor.next()) {
+      result ::= TestingOrder(
+        cursor.getLong(1),
+        cursor.getString(2),
+        cursor.getDouble(3),
+        cursor.getDouble(4),
+        cursor.getString(5),
+        cursor.getDouble(6),
+        cursor.getString(7),
+        cursor.getInt(8),
+        cursor.getInt(9),
+        cursor.getInt(10),
+        cursor.getInt(11),
+        cursor.getString(12),
+        cursor.getLong(13),
+        cursor.getLong(14),
+        cursor.getInt(15),
+        cursor.getBoolean(16)
+      )
+    }
+    cursor.close()
+    statement.close()
+    result
+  }
+
   def getAllTestingResult(testingID: Long, capacityID: Int): List[TestingResult] = {
     var result: List[TestingResult] = Nil
     val statement = connection.prepareStatement(

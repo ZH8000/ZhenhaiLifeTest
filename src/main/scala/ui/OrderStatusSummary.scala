@@ -14,7 +14,7 @@ object TestSetting {
 
   Class.forName("org.sqlite.JDBC")
 
-  val databasePath = "/home/zhenhai/test.db"
+  val databasePath = "/home/brianhsu/WorkRoom/ZhenhaiLifeTest/test.db"
   val voltageList = List(4, 6.3, 10, 16, 25, 35, 50, 63, 80, 100, 160, 200, 220, 250, 315, 350, 400, 420, 450, 500)
   val testingTimeList = List(100, 500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 500000)
   val capacityList = List(
