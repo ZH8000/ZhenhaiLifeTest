@@ -389,6 +389,15 @@ class TestControl(orderStatusSummary: OrderStatusSummary) extends Composite(orde
     startOvenTestButton.setEnabled(false)
     stopTestButton.setEnabled(false)
 
+    if (orderStatusSummary.isHistory) {
+      startOvenTestButton.setEnabled(false)
+      startRoomTemperatureTestButton.setEnabled(false)
+      stopTestButton.setEnabled(false)
+      startOvenTestButton.setVisible(false)
+      startRoomTemperatureTestButton.setVisible(false)
+      stopTestButton.setVisible(false)
+    }
+
     startOvenTestButton.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(e: SelectionEvent) {
         startOvenTest()
@@ -747,9 +756,9 @@ class CapacityBlock(title: String, orderStatusSummary: OrderStatusSummary) exten
 }
 
 class OrderStatusSummary(var isNewOrder: Boolean, val blockNo: Int, val daughterBoard: Int, 
-                         val testingBoard: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
+                         val testingBoard: Int, mainWindowShell: Shell, var orderInfoHolder: Option[TestingOrder] = None) extends Composite(mainWindowShell, SWT.NONE) {
 
-  var orderInfoHolder: Option[TestingOrder] = None
+  val isHistory = blockNo == -1
 
   val title = createTitleLabel()
   val composite = createComposite()
@@ -776,7 +785,7 @@ class OrderStatusSummary(var isNewOrder: Boolean, val blockNo: Int, val daughter
   def updateNewOrderButtonStatus() {
     val isTestStopped = orderInfoHolder.map(info => info.currentStatus == 6 || info.currentStatus == 7).getOrElse(false)
     if (!newOrderButton.isDisposed) {
-      newOrderButton.setVisible(!isNewOrder)
+      newOrderButton.setVisible(!isNewOrder && !isHistory)
       newOrderButton.setEnabled(!isNewOrder && isTestStopped)
     }
   }
@@ -799,8 +808,8 @@ class OrderStatusSummary(var isNewOrder: Boolean, val blockNo: Int, val daughter
     newOrderButtonLayoutData.horizontalAlignment = GridData.END
     newOrderButtonLayoutData.grabExcessHorizontalSpace = true
     newOrderButton.setLayoutData(newOrderButtonLayoutData)
-    newOrderButton.setVisible(!isNewOrder)
-    newOrderButton.setEnabled(!isNewOrder && isTestStopped)
+    newOrderButton.setVisible(!isNewOrder && !isHistory)
+    newOrderButton.setEnabled(!isNewOrder && !isHistory && isTestStopped)
     newOrderButton.setText("新測試")
     newOrderButton.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(e: SelectionEvent) {
@@ -817,7 +826,11 @@ class OrderStatusSummary(var isNewOrder: Boolean, val blockNo: Int, val daughter
     titleLayoutData.grabExcessHorizontalSpace = true
     titleLayoutData.horizontalSpan = 2
     title.setLayoutData(titleLayoutData)
-    title.setText(s"電容測試（區域 $blockNo）")
+    if (isHistory) {
+      title.setText(s"電容測試（歷史資料）")
+    } else {
+      title.setText(s"電容測試（區域 $blockNo）")
+    }
     title
   }
 
@@ -861,7 +874,10 @@ class OrderStatusSummary(var isNewOrder: Boolean, val blockNo: Int, val daughter
 
   def updateInfo() {
     if (!isNewOrder) {
-      orderInfoHolder = TestSetting.db.getTestingOrderByBlock(daughterBoard, testingBoard)
+
+      if (!isHistory) {
+        orderInfoHolder = TestSetting.db.getTestingOrderByBlock(daughterBoard, testingBoard)
+      }
       updateNewOrderButtonStatus()
       testSetting.updateSettingInfo(orderInfoHolder)
       capacityBlock.updateCapacityInfo(orderInfoHolder)
@@ -888,7 +904,9 @@ class OrderStatusSummary(var isNewOrder: Boolean, val blockNo: Int, val daughter
       def run() { 
         Display.getDefault.asyncExec(new Runnable() {
           override def run() {
-            updateInfo()
+            if (!isHistory) {
+              updateInfo()
+            }
           }
         })
       } 

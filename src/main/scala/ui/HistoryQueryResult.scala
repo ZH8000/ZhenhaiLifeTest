@@ -67,7 +67,11 @@ class HistoryQueryResult(mainWindowShell: Shell, dateString: String) extends Com
         val selectedIndex = table.getSelectionIndex
         val selectedItem = table.getItem(selectedIndex)
         MainWindow.appendLog(s"點選 [$selectedIndex] => ${selectedItem.getText(0)} / ${selectedItem.getText(1)}")
-        MainWindow.pushComposite(new OrderStatusSummary(false, -1, -1, -1, MainWindow.mainWindowShell))
+        MainWindow.pushComposite(
+          new OrderStatusSummary(
+            false, -1, -1, -1, MainWindow.mainWindowShell, Some(dataList(selectedIndex))
+          )
+        )
       }
     })
 
