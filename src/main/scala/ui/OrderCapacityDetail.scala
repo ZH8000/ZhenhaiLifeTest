@@ -13,7 +13,7 @@ object CapacityValueChart extends ChartType
 object DXValueChart extends ChartType
 object LCValueChart extends ChartType
 
-class CapacityTestChart(title: String, capacityID: Int, chartType: ChartType, testingResult: List[TestingResult]) {
+class CapacityTestChart(title: String, capacityID: Int, chartType: ChartType, testingResult: Array[TestingResult]) {
   
   import org.jfree.data.xy.XYDataset
   import org.jfree.data.xy.XYSeries
@@ -81,7 +81,7 @@ class CapacityTestChart(title: String, capacityID: Int, chartType: ChartType, te
 
 class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, capacityID: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
-  val testingResult = TestSetting.db.getAllTestingResult(orderInfo.id, capacityID)
+  lazy val testingResult = TestSetting.db.getAllTestingResult(orderInfo.id, capacityID).toArray
 
   def createChartComposite(parent: Composite) = {
     val composite = new Composite(parent, SWT.NONE)
@@ -120,7 +120,7 @@ class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, capacityID: Int
   def createDataTable(parent: Composite) = {
     val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
     val timeFormatter = new SimpleDateFormat("HH:mm:ss")
-    val dataTable = new Table(parent, SWT.BORDER)
+    val dataTable = new Table(parent, SWT.BORDER|SWT.VIRTUAL)
     val tableColumns = Array(
       new TableColumn(dataTable, SWT.CENTER),   // 編號
       new TableColumn(dataTable, SWT.CENTER),   // 時間
@@ -135,34 +135,35 @@ class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, capacityID: Int
     tableColumns(3).setText("電容值")
     tableColumns(4).setText("DX 值")
 
+    val white = getDisplay.getSystemColor(SWT.COLOR_WHITE)
     dataTable.setHeaderVisible(true)
     dataTable.setLinesVisible(true)
-
-    var rowCount = 1
-    val white = getDisplay.getSystemColor(SWT.COLOR_WHITE);
-
-    for (row <- testingResult) {
-      val item = new TableItem(dataTable, SWT.NONE)
-      val dateTime = new Date(row.timestamp)
-      item.setText(0, s"# $rowCount")
-      item.setText(1, dateFormatter.format(dateTime))
-      item.setText(2, timeFormatter.format(dateTime))
-      item.setText(3, "%.02f".format(row.capacity))
-      item.setText(4, "%.02f".format(row.dxValue))
-      item.setBackground(0, white)
-      item.setBackground(1, white)
-      item.setBackground(2, white)
-      item.setBackground(3, white)
-      item.setBackground(4, white)
-
-      rowCount += 1
-    }
+    dataTable.setItemCount(testingResult.size)
+    dataTable.addListener(SWT.SetData, new Listener() {
+      override def handleEvent(event: Event) {
+        val item = event.item.asInstanceOf[TableItem]
+        val index = dataTable.indexOf(item)
+        val row = testingResult(index)
+        val dateTime = new Date(row.timestamp)
+        item.setText(0, s"# $index")
+        item.setText(1, dateFormatter.format(dateTime))
+        item.setText(2, timeFormatter.format(dateTime))
+        item.setText(3, "%.02f".format(row.capacity))
+        item.setText(4, "%.02f".format(row.dxValue))
+        item.setBackground(0, white)
+        item.setBackground(1, white)
+        item.setBackground(2, white)
+        item.setBackground(3, white)
+        item.setBackground(4, white)
+      }
+    })
 
     (0 until tableColumns.size).foreach { i => 
       val column = dataTable.getColumn(i)
       column.pack()
-      column.setWidth(column.getWidth + 30)
+      column.setWidth(column.getWidth + 150)
     }
+
 
     dataTable
   }
