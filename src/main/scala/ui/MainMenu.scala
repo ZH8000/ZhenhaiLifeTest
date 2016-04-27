@@ -84,12 +84,12 @@ class MainMenu(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NO
     layoutData3.grabExcessHorizontalSpace = true
     layoutData3.grabExcessVerticalSpace = true
 
-    queryButton.setText("單號查詢")
+    queryButton.setText("料號查詢")
     queryButton.setLayoutData(layoutData3)
     queryButton.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(evnet: SelectionEvent) {
-        MainWindow.appendLog("點選「單號查詢」")
-        MainWindow.pushComposite(new OrderIDQuery(mainWindowShell))
+        MainWindow.appendLog("點選「料號查詢」")
+        MainWindow.pushComposite(new PartNoQuery(mainWindowShell))
       }
     })
 
