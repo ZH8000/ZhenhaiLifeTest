@@ -4,8 +4,14 @@ import org.eclipse.swt._
 import org.eclipse.swt.widgets.{List => SWTList, _}
 import org.eclipse.swt.layout._
 import org.eclipse.swt.events._
+import org.eclipse.swt.graphics.Image
 
 class MainMenu(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
+
+  def loadImage(fileName: String) = {
+    val imageFile = classOf[MainMenu].getResourceAsStream(fileName)
+    new Image(null, imageFile)
+  }
 
   def init() {
     val gridLayout = new GridLayout(2, true)
@@ -54,6 +60,7 @@ class MainMenu(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NO
     layoutData1.grabExcessHorizontalSpace = true
     layoutData1.grabExcessVerticalSpace = true
 
+    monitorButton.setImage(loadImage("/icon/monitor.png"))
     monitorButton.setText("即時監控")
     monitorButton.setLayoutData(layoutData1)
     monitorButton.addSelectionListener(new SelectionAdapter() {
@@ -69,6 +76,7 @@ class MainMenu(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NO
     layoutData2.grabExcessHorizontalSpace = true
     layoutData2.grabExcessVerticalSpace = true
 
+    historyButton.setImage(loadImage("/icon/history.png"))
     historyButton.setText("歷史資料")
     historyButton.setLayoutData(layoutData2)
     historyButton.addSelectionListener(new SelectionAdapter() {
@@ -84,12 +92,13 @@ class MainMenu(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NO
     layoutData3.grabExcessHorizontalSpace = true
     layoutData3.grabExcessVerticalSpace = true
 
-    queryButton.setText("單號查詢")
+    queryButton.setImage(loadImage("/icon/find.png"))
+    queryButton.setText("料號查詢")
     queryButton.setLayoutData(layoutData3)
     queryButton.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(evnet: SelectionEvent) {
-        MainWindow.appendLog("點選「單號查詢」")
-        MainWindow.pushComposite(new OrderIDQuery(mainWindowShell))
+        MainWindow.appendLog("點選「料號查詢」")
+        MainWindow.pushComposite(new PartNoQuery(mainWindowShell))
       }
     })
 
@@ -99,6 +108,7 @@ class MainMenu(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NO
     layoutData4.grabExcessHorizontalSpace = true
     layoutData4.grabExcessVerticalSpace = true
 
+    settingButton.setImage(loadImage("/icon/config.png"))
     settingButton.setText("儀器設定")
     settingButton.setLayoutData(layoutData4)
     settingButton.addSelectionListener(new SelectionAdapter() {
