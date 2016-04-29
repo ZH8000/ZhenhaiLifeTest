@@ -59,7 +59,6 @@ class RSTLCChecker(port: String, baudRate: Int = SerialPort.BAUDRATE_9600, waitF
             buffer.setLength(0)
           } else {
             buffer.append(character)
-            serialPort.writeBytes("\n\r".getBytes)
           }
         }
       }
