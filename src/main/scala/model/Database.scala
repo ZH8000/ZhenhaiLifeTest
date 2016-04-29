@@ -221,18 +221,19 @@ class Database(filename: String) {
   def insertTestingResult(tableName: String, result: TestingResult) {
     val statement = connection.prepareStatement(
       s"INSERT INTO $tableName " +
-       "(testingID, capacityID, capacity, dxValue, isCapacityOK, isDXValueOK, isLeakCurrentOK, isOK, timestamp) VALUES " +
-       "(?, ?, ?, ?, ?, ?, ?, ?, ?)"
+       "(testingID, capacityID, capacity, dxValue, leakCurrent, isCapacityOK, isDXValueOK, isLeakCurrentOK, isOK, timestamp) VALUES " +
+       "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     statement.setLong(1, result.testingID)
     statement.setInt(2, result.capacityID)
     statement.setDouble(3, result.capacity)
     statement.setDouble(4, result.dxValue)
-    statement.setBoolean(5, result.isCapacityOK)
-    statement.setBoolean(6, result.isDXValueOK)
-    statement.setBoolean(7, result.isLeakCurrentOK)
-    statement.setBoolean(8, result.isOK)
-    statement.setLong(9, result.timestamp)
+    statement.setDouble(5, result.leakCurrent)
+    statement.setBoolean(6, result.isCapacityOK)
+    statement.setBoolean(7, result.isDXValueOK)
+    statement.setBoolean(8, result.isLeakCurrentOK)
+    statement.setBoolean(9, result.isOK)
+    statement.setLong(10, result.timestamp)
     statement.executeUpdate()
     statement.close()
 
@@ -753,11 +754,12 @@ class Database(filename: String) {
         cursor.getInt(2),
         cursor.getDouble(3),
         cursor.getDouble(4),
-        cursor.getBoolean(5),
+        cursor.getDouble(5),
         cursor.getBoolean(6),
         cursor.getBoolean(7),
         cursor.getBoolean(8),
-        cursor.getLong(9)
+        cursor.getBoolean(9),
+        cursor.getLong(10)
       )
     }
     cursor.close()
@@ -784,11 +786,12 @@ class Database(filename: String) {
           cursor.getInt(2),
           cursor.getDouble(3),
           cursor.getDouble(4),
-          cursor.getBoolean(5),
+          cursor.getDouble(5),
           cursor.getBoolean(6),
           cursor.getBoolean(7),
           cursor.getBoolean(8),
-          cursor.getLong(9)
+          cursor.getBoolean(9),
+          cursor.getLong(10)
         )
       )
     }

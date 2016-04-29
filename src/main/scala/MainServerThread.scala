@@ -116,6 +116,7 @@ class MainServerThread extends Thread {
    */
   def startLCRMeasurement(testingOrder: TestingOrder, isInRoomTemperature: Boolean) {
 
+    var testingResultMap: Map[Int, TestingResult] = Map.empty
     val damagedCapacity = db.getDamagedCapacity(testingOrder.id)
     val capacityList = (1 to capaciyCount).filterNot(damagedCapacity contains _)
     val daughterBoard = if (isInRoomTemperature) rtDaughterBoard else testingOrder.daughterBoard
@@ -146,7 +147,7 @@ class MainServerThread extends Thread {
           val isOK = true
           val testingResult = TestingResult(
             testingOrder.id, capacityID, 
-            result.capacityValue.toDouble, result.dxValue.toDouble, 
+            result.capacityValue.toDouble, result.dxValue.toDouble,  -1,
             isCapacityOK, isDXValueOK, isLeakCurrentOK, isOK,
             System.currentTimeMillis
           )
