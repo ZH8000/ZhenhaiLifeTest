@@ -213,7 +213,7 @@ class Database(filename: String) {
   }
 
   /**
-   *  寫入室溫測試結果資料表
+   *  寫入測試結果資料表
    *
    *  @param    tableName 資料表名稱
    *  @param    result    要寫入的室溫測試結果
@@ -240,6 +240,26 @@ class Database(filename: String) {
   }
 
   /**
+   *  更新測試結果資料表中的 LC 相關數值
+   *
+   *  @param    tableName 資料表名稱
+   *  @param    result    要寫入的室溫測試結果
+   */
+  def updateTestingResultForLC(tableName: String, result: TestingResult) {
+    val statement = connection.prepareStatement(
+      s"UPDATE $tableName SET leakCurrent=?, isLeakCurrentOK=? WHERE testingID=? AND capacityID=? AND timestamp=?"
+    )
+    statement.setDouble(1, result.leakCurrent)
+    statement.setBoolean(2, result.isLeakCurrentOK)
+    statement.setLong(3, result.testingID)
+    statement.setInt(4, result.capacityID)
+    statement.setLong(5, result.timestamp)
+    statement.executeUpdate()
+    statement.close()
+  }
+
+
+  /**
    *  寫入室溫測試結果資料表
    *
    *  @param    result    要寫入的室溫測試結果
@@ -256,6 +276,25 @@ class Database(filename: String) {
   def insertOvenTestingResult(result: TestingResult) {
     insertTestingResult("OvenTestingResult", result)
   }
+
+  /**
+   *  更新室溫測試結果資料表中的 LC 相關數值
+   *
+   *  @param    result    要寫入的室溫測試結果
+   */
+  def updateRoomTemperatureTestingResultForLC(result: TestingResult) {
+    updateTestingResultForLC("RoomTemperatureTestingResult", result)
+  }
+
+  /**
+   *  更新烤箱測試結果資料表中的 LC 相關數值
+   *
+   *  @param    result    要寫入的烤箱測試結果
+   */
+  def updateOvenTestingResultForLC(result: TestingResult) {
+    updateTestingResultForLC("OvenTestingResult", result)
+  }
+
 
   /**
    *  將測試單號加入烤箱測試佇列中

@@ -18,7 +18,7 @@ class LifeTestDaemon extends Daemon {
 
   override def stop() {
     serverThread.shouldStopped = true
-    serverThread.join(1000 * 60)
+    serverThread.join(1000 * 5)
   }
 
   override def init(context: DaemonContext) { }

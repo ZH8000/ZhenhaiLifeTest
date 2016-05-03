@@ -667,6 +667,7 @@ class CapacityBlock(title: String, orderStatusSummary: OrderStatusSummary) exten
     def clear() {
       capacityInfo.setText("")
       dxValueInfo.setText("")
+      leakCurrentInfo.setText("")
       capacityStatusLabel.setText("")
       dxValueStatusLabel.setText("")
       titleButton.setBackground(null)
@@ -678,7 +679,7 @@ class CapacityBlock(title: String, orderStatusSummary: OrderStatusSummary) exten
 
         val isDisposed = 
           capacityInfo.isDisposed || dxValueInfo.isDisposed || capacityStatusLabel.isDisposed || 
-          dxValueStatusLabel.isDisposed || titleButton.isDisposed
+          dxValueStatusLabel.isDisposed || titleButton.isDisposed || leakCurrentInfo.isDisposed
 
         if (!isDisposed) {
 
@@ -693,6 +694,10 @@ class CapacityBlock(title: String, orderStatusSummary: OrderStatusSummary) exten
 
           val titleButtonColor = if (testingResult.isOK) greenColor else redColor
           titleButton.setBackground(titleButtonColor)
+
+          if (testingResult.leakCurrent != -1) {
+            leakCurrentInfo.setText(testingResult.leakCurrent.toString)
+          }
         }
       }
     }

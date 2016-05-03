@@ -51,6 +51,16 @@ class CapacityTestChart(title: String, capacityID: Int, chartType: ChartType, te
     new TimeSeriesCollection(series)
   }
 
+  def createLCValueDataset = {
+    val series = new TimeSeries(title)
+    for (row <- testingResult) {
+      val timestamp = new Date(row.timestamp)
+      series.add(new Second(timestamp) , row.leakCurrent)
+    }
+    new TimeSeriesCollection(series)
+  }
+
+
   def createCapacityValueDataset = {
     val series = new TimeSeries(title)
     for (row <- testingResult) {
@@ -66,7 +76,7 @@ class CapacityTestChart(title: String, capacityID: Int, chartType: ChartType, te
     chartType match {
       case CapacityValueChart => createCapacityValueDataset
       case DXValueChart => createDXValueDataset
-      case LCValueChart => new XYSeriesCollection
+      case LCValueChart => createLCValueDataset
     }
   }
 
@@ -126,7 +136,8 @@ class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, capacityID: Int
       new TableColumn(dataTable, SWT.CENTER),   // 時間
       new TableColumn(dataTable, SWT.CENTER),   // 日期
       new TableColumn(dataTable, SWT.CENTER),   // 容量值
-      new TableColumn(dataTable, SWT.CENTER)    // dx 值
+      new TableColumn(dataTable, SWT.CENTER),   // dx 值
+      new TableColumn(dataTable, SWT.CENTER)    // 漏電流
     )
 
     tableColumns(0).setText("編號")
@@ -134,6 +145,7 @@ class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, capacityID: Int
     tableColumns(2).setText("時間")
     tableColumns(3).setText("電容值")
     tableColumns(4).setText("DX 值")
+    tableColumns(5).setText("漏電流")
 
     val white = getDisplay.getSystemColor(SWT.COLOR_WHITE)
     dataTable.setHeaderVisible(true)
@@ -145,16 +157,19 @@ class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, capacityID: Int
         val index = dataTable.indexOf(item)
         val row = testingResult(index)
         val dateTime = new Date(row.timestamp)
+        val leakCurrent = if (row.leakCurrent == -1) "尚未測定" else "%.02f".format(row.leakCurrent)
         item.setText(0, s"# $index")
         item.setText(1, dateFormatter.format(dateTime))
         item.setText(2, timeFormatter.format(dateTime))
         item.setText(3, "%.02f".format(row.capacity))
         item.setText(4, "%.02f".format(row.dxValue))
+        item.setText(5, leakCurrent)
         item.setBackground(0, white)
         item.setBackground(1, white)
         item.setBackground(2, white)
         item.setBackground(3, white)
         item.setBackground(4, white)
+        item.setBackground(5, white)
       }
     })
 

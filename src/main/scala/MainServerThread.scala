@@ -16,12 +16,14 @@ class MainServerThread extends Thread {
   var shouldStopped = false
   val logger = LoggerFactory.getLogger("LifeTest")
 
-  val frontUp  = "/dev/serial/by-path/pci-0000:00:10.1-usb-0:1:1.0-port0"
-  val backUp   = "/dev/serial/by-path/pci-0000:00:10.0-usb-0:1:1.0-port0"
-  val backDown = "/dev/serial/by-path/pci-0000:00:10.0-usb-0:2:1.0-port0"
-  val mainBoardPort = frontUp
-  val lcrMeterPort = backUp
-  val powerSuppliesPort: Map[Int, String] = Map(0 -> backDown)
+  // val frontUp  = "/dev/serial/by-path/pci-0000:00:10.1-usb-0:1:1.0-port0"
+  // val backUp   = "/dev/serial/by-path/pci-0000:00:10.0-usb-0:1:1.0-port0"
+  // val backDown = "/dev/serial/by-path/pci-0000:00:10.0-usb-0:2:1.0-port0"
+  val mainBoardPort = "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.5:1.0-port0"
+  val lcrMeterPort = "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.7:1.0-port0"
+  val lcMeterPort = "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2:1.0-port0"
+  val power1Port = "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4:1.0-port0"
+  val powerSuppliesPort: Map[Int, String] = Map(0 -> power1Port)
 
   val daughterBoardCount = 3    // 總共有幾組測試子板
   val capaciyCount = 3         // 一組的電容有幾顆
@@ -32,6 +34,7 @@ class MainServerThread extends Thread {
 
   val mainBoard = new MainBoard(mainBoardPort)
   val lcrMeter = new LCRMeter(lcrMeterPort)
+  val lcMeter = new RSTLCChecker(lcMeterPort)
   val powerSupplies: Map[Int, PowerSupplyInterface] = {
     var result: Map[Int, PowerSupplyInterface] = Map.empty
     for (daughterBoard <- 0 until daughterBoardCount) {
@@ -108,13 +111,88 @@ class MainServerThread extends Thread {
     }
   }
 
+  def startLCMeasurement(powerSupply: PowerSupplyInterface, testingOrder: TestingOrder, 
+                         isInRoomTemperature: Boolean, lcrResultMap: Map[Int, TestingResult]) {
+
+    logger.info("  ==> LC 測試")
+
+    val damagedCapacity = db.getDamagedCapacity(testingOrder.id)
+    val capacityList = (1 to capaciyCount).filterNot(damagedCapacity contains _)
+    val daughterBoard = if (isInRoomTemperature) rtDaughterBoard else testingOrder.daughterBoard
+    val testingBoard = if (isInRoomTemperature) rtTestingBoard else testingOrder.testingBoard
+
+    logger.info("    ==> 開啟充電模式，充電一分鐘……")
+    mainBoard.setChargeMode(daughterBoard, testingBoard, 0)
+    powerSupply.setVoltage(testingOrder.voltage)
+    powerSupply.setOutput(true)
+    mainBoard.setChargeMode(daughterBoard, testingBoard, 1)
+    Thread.sleep(60 * 1000)
+
+    logger.info("   ==> 關閉充電模式，開始測試 LC 數值")
+    powerSupply.setOutput(false)
+    mainBoard.setChargeMode(daughterBoard, testingBoard, 0)
+
+    for (capacityID <- capacityList) {
+
+      logger.info(s"    ==> 測試編號 $capacityID 的電容")
+
+      //lcMeter.setRange(testingOrder.capacity)
+
+      val testingResult = for {
+        lcChannel <- mainBoard.setLCChannel(daughterBoard, testingBoard, capacityID)
+        lcResult  <- lcMeter.startMeasure()
+      } yield lcResult
+
+      logger.info(testingResult.toString)
+
+      testingResult match {
+        case Failure(e) if isInRoomTemperature  => db.insertRoomTemperatureTestingErrorLog(testingOrder.id, capacityID, e.toString)
+        case Failure(e) if !isInRoomTemperature => db.insertOvenTestingErrorLog(testingOrder.id, capacityID, e.toString)
+        case Success(result) =>
+
+          val originalTestResult = lcrResultMap.get(capacityID).getOrElse(
+            TestingResult(
+              testingOrder.id, capacityID, 0, 9999,  -1,
+              false, false, false, false,
+              System.currentTimeMillis
+            )
+          )
+          val updatedTestResult = originalTestResult.copy(
+            leakCurrent = result.leakCurrent.toDouble,
+            isLeakCurrentOK = true
+          )
+
+          if (isInRoomTemperature) {
+            db.updateRoomTemperatureTestingResultForLC(updatedTestResult)
+          } else {
+            db.updateOvenTestingResultForLC(updatedTestResult)
+          }
+      }
+    }
+
+    logger.info("  ==> LC 測試完畢")
+
+    if (isInRoomTemperature) {
+      logger.info("  ==> 室溫測試 LC 完成，放電中……")
+      mainBoard.setChargeMode(daughterBoard, testingBoard, 2)
+      Thread.sleep(10 * 1000)
+      mainBoard.setChargeMode(daughterBoard, testingBoard, 0)
+      logger.info("  ==> 放電完成")
+    }
+
+
+  }
+
   /**
    *  開始進行 LCR 測試
    *
    *  @param    testingOrder              測試單資料
    *  @param    isInRoomTemperature       是否為室溫測試
+   *  @return                             LCR 測試儀的測試結果的 HashMap，Key 為電容編號，值為側試結果
    */
-  def startLCRMeasurement(testingOrder: TestingOrder, isInRoomTemperature: Boolean) {
+  def startLCRMeasurement(testingOrder: TestingOrder, isInRoomTemperature: Boolean): Map[Int, TestingResult] = {
+
+    logger.info("  ==> LCR 測試")
 
     var testingResultMap: Map[Int, TestingResult] = Map.empty
     val damagedCapacity = db.getDamagedCapacity(testingOrder.id)
@@ -157,10 +235,12 @@ class MainServerThread extends Thread {
           } else {
             db.insertOvenTestingResult(testingResult)
           }
+          testingResultMap += (capacityID -> testingResult)
       }
     }
 
     mainBoard.setLCRChannel(daughterBoard, testingBoard, 0)
+    testingResultMap
   }
 
   /**
@@ -205,7 +285,8 @@ class MainServerThread extends Thread {
             db.updateRoomTemperatureTestingQueue(request.copy(currentStatus = 6))
             db.insertRoomTemperatureTestingErrorLog(testingOrder.id, -1, e.toString)
           case Success((uuid, powerSupply))  => 
-            startLCRMeasurement(testingOrder, true)
+            val lcrResult = startLCRMeasurement(testingOrder, true)
+            startLCMeasurement(powerSupply, testingOrder, true, lcrResult)
             db.updateRoomTemperatureTestingQueue(request.copy(currentStatus = 7))
             db.updateTestingOrder(testingOrder.copy(tbUUID = uuid, isRoomTemperatureTested = true))
         }
@@ -246,7 +327,7 @@ class MainServerThread extends Thread {
             enableDischarge <- mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, 2, 10)
             disableChargeDischarge <- mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, 0)
             uuid            <- mainBoard.getUUID(0, 0)
-          } yield uuid
+          } yield (uuid, powerSupply)
 
           logger.info(initialCheckingAndUUID.toString)
 
@@ -263,11 +344,12 @@ class MainServerThread extends Thread {
             case Failure(e)                         => 
               db.updateTestingOrder(testingOrder.copy(currentStatus = 5))
               db.insertOvenTestingErrorLog(testingOrder.id, -2, e.toString)
-            case Success(uuid) if uuid != testingOrder.tbUUID => 
+            case Success((uuid, _)) if uuid != testingOrder.tbUUID => 
               db.updateTestingOrder(testingOrder.copy(currentStatus = 6))
               db.insertOvenTestingErrorLog(testingOrder.id, -2, "UUID Not match")
-            case Success(uuid) => 
-              startLCRMeasurement(testingOrder, false)
+            case Success((uuid, powerSupply)) => 
+              val lcrResult = startLCRMeasurement(testingOrder, false)
+              startLCMeasurement(powerSupply, testingOrder, false, lcrResult)
               mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, 1)
           }
 
@@ -392,6 +474,7 @@ class MainServerThread extends Thread {
 
     mainBoard.open()
     lcrMeter.open()
+    lcMeter.open()
     initilizePowerSupplies()
     logger.info("初始化電源供應器及設備完成……")
 
