@@ -85,6 +85,7 @@ class GENH600(port: String, deviceAddress: Int = 0, baudRate: Int = SerialPort.B
         data.foreach { character =>
           if (character == '\r') {
             val line = buffer.toString.trim
+            println("===> line:" + line)
             responseMessage  = Some(line)
             buffer.setLength(0)
           } else {
@@ -152,7 +153,13 @@ class GENH600(port: String, deviceAddress: Int = 0, baudRate: Int = SerialPort.B
     serialPort.openPort()
     serialPort.setParams(baudRate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE)
     setResponseCallback()
-    sendCommand("ADR " + "%02d".format(deviceAddress)).map(_ == "OK")
+
+    // Power Supply 有時會有 BUG，導致開機後的第一個 RS232 指令不會有回應，所以
+    // 要送一個 dummy 的指令，讓 Power Supply 回復正常。
+    sendCommand("ADR %02d".format(deviceAddress))
+
+    // 這個指令才真的會有來自 Power Supply 的回覆訊息
+    sendCommand("ADR %02d".format(deviceAddress)).map(_ == "OK")
   }
 
   /**
