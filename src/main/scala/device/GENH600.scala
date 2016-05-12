@@ -85,7 +85,6 @@ class GENH600(port: String, deviceAddress: Int = 0, baudRate: Int = SerialPort.B
         data.foreach { character =>
           if (character == '\r') {
             val line = buffer.toString.trim
-            println("===> line:" + line)
             responseMessage  = Some(line)
             buffer.setLength(0)
           } else {

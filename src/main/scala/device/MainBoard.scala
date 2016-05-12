@@ -126,6 +126,10 @@ class MainBoard(port: String, baudRate: Int = SerialPort.BAUDRATE_9600, waitForR
    *  送出命令給母板
    */
   def sendCommand(command: String) {
+    serialPort.writeBytes("\n".getBytes)
+    Thread.sleep(100)
+    serialPort.writeBytes("\n".getBytes)
+    Thread.sleep(100)
     dataResultHolder = None
     serialPort.writeBytes(s"$command\n".getBytes)
   }

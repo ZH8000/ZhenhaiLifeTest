@@ -19,10 +19,20 @@ class MainServerThread extends Thread {
   // val frontUp  = "/dev/serial/by-path/pci-0000:00:10.1-usb-0:1:1.0-port0"
   // val backUp   = "/dev/serial/by-path/pci-0000:00:10.0-usb-0:1:1.0-port0"
   // val backDown = "/dev/serial/by-path/pci-0000:00:10.0-usb-0:2:1.0-port0"
-  val mainBoardPort = "/dev/serial/by-path/pci-0000:00:1a.0-usb-0:1.1:1.0-port0"
-  val power1Port    = "/dev/serial/by-path/pci-0000:00:1a.0-usb-0:1.2:1.0-port0"
-  val lcrMeterPort  = "/dev/serial/by-path/pci-0000:00:1a.0-usb-0:1.3:1.0-port0"
-  val lcMeterPort   = "/dev/serial/by-path/pci-0000:00:1a.0-usb-0:1.4:1.0-port0"
+  
+
+  // ASUS PC
+  //val mainBoardPort = "/dev/serial/by-path/pci-0000:00:1a.0-usb-0:1.1:1.0-port0"
+  //val power1Port    = "/dev/serial/by-path/pci-0000:00:1a.0-usb-0:1.2:1.0-port0"
+  //val lcrMeterPort  = "/dev/serial/by-path/pci-0000:00:1a.0-usb-0:1.3:1.0-port0"
+  //val lcMeterPort   = "/dev/serial/by-path/pci-0000:00:1a.0-usb-0:1.4:1.0-port0"
+
+  // Toshiba Z30
+  val mainBoardPort = "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.7:1.0-port0"
+  val power1Port    = "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.5:1.0-port0"
+  val lcrMeterPort  = "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2:1.0-port0"
+  val lcMeterPort   = "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4:1.0-port0"
+
   val powerSuppliesPort: Map[Int, String] = Map(0 -> power1Port)
 
   val daughterBoardCount = 3    // 總共有幾組測試子板
