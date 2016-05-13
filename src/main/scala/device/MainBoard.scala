@@ -4,6 +4,7 @@ import jssc.SerialPort
 import jssc.SerialPortEvent
 import jssc.SerialPortEventListener
 import scala.util.Try
+import scala.util.Failure
 
 /**
  *  主板的 RS232 介面
@@ -25,6 +26,7 @@ class MainBoard(port: String, baudRate: Int = SerialPort.BAUDRATE_9600, waitForR
     }
 
     if (numberOfTries > 100) {
+      dataResultHolder = None
       throw MainBoardRS232Timeout
     } else {
       val result = dataResultHolder.get
@@ -36,42 +38,71 @@ class MainBoard(port: String, baudRate: Int = SerialPort.BAUDRATE_9600, waitForR
     }
   }
 
+  def retry[T](maxTries: Int)(block: => Try[T]): Try[T] = {
+    var result: Try[T] = Failure(new Exception("No response at all"))
+    var count = 0
+
+    while (result.isFailure && count < maxTries) {
+      if (count > 0) {
+        println(s"Retry ${count}")
+        this.close()
+        this.open()
+      }
+      result = block
+      count += 1
+    }
+    result
+  }
+
   def getUUID(daughterBoard: Int, testBoard: Int): Try[String] = {
     val command = "$" + daughterBoard + "$" + testBoard + "$f$$$"
-    sendCommand(command)
-    getResponse.map(_.drop(7).dropRight(1))
+
+    retry(6) {
+      sendCommand(command)
+      getResponse.map(_.drop(7).dropRight(1))
+    }
   }
 
   def isHVRelayOK(daughterBoard: Int, testBoard: Int): Try[Boolean] = {
     val command = "$" + daughterBoard + "$" + testBoard + "$d$$$"
-    sendCommand(command)
-    getResponse.map(_ == s"#$daughterBoard#$testBoard#d#1#")
+    retry(6) {
+      sendCommand(command)
+      getResponse.map(_ == s"#$daughterBoard#$testBoard#d#1#").filter(_ == true)
+    }
   }
 
   def setChargeMode(daughterBoard: Int, testBoard: Int, chargeMode: Int, waitAfterDischarge: Int = 0): Try[Boolean] = {
     val command = "$" + daughterBoard + "$" + testBoard + "$c$" + chargeMode + "$"
-    sendCommand(command)
-    val result = getResponse.map(line => line == command.replace("$", "#"))
-    if (result.isSuccess) {
-      Thread.sleep(waitAfterDischarge * 1000)
+
+    retry(6) {
+      sendCommand(command)
+      val result = getResponse.map(line => line == command.replace("$", "#"))
+      if (result.isSuccess) {
+        Thread.sleep(waitAfterDischarge * 1000)
+      }
+      result.filter(_ == true)
     }
-    result
   }
 
   def setLCRChannel(daughterBoard: Int, testBoard: Int, capacityNumber: Int): Try[Boolean] = {
     val command = "$" + daughterBoard + "$" + testBoard + "$a$" + "%x".format(capacityNumber) + "$"
-    sendCommand(command)
-    val result = getResponse.map(_ == command.replace("$", "#"))
-    if (result.isSuccess) {
-      Thread.sleep(1000)
+
+    retry(6) {
+      sendCommand(command)
+      val result = getResponse.map(_ == command.replace("$", "#"))
+      if (result.isSuccess) {
+        Thread.sleep(1000)
+      }
+      result.filter(_ == true)
     }
-    result
   }
 
   def setLCChannel(daughterBoard: Int, testBoard: Int, capacityNumber: Int): Try[Boolean] = {
     val command = "$" + daughterBoard + "$" + testBoard + "$b$" + "%x".format(capacityNumber) + "$"
-    sendCommand(command)
-    getResponse.map(_ == command.replace("$", "#"))
+    retry(6) {
+      sendCommand(command)
+      getResponse.map(_ == command.replace("$", "#")).filter(_ == true)
+    }
   }
 
 
@@ -138,6 +169,7 @@ class MainBoard(port: String, baudRate: Int = SerialPort.BAUDRATE_9600, waitForR
    *  關閉 LCR Meter RS232 通訊埠
    */
   def close() {
+    serialPort.removeEventListener()
     serialPort.closePort()
   }
 

@@ -16,10 +16,10 @@ class MainServerThread extends Thread {
   var shouldStopped = false
   val logger = LoggerFactory.getLogger("LifeTest")
 
-  // val frontUp  = "/dev/serial/by-path/pci-0000:00:10.1-usb-0:1:1.0-port0"
-  // val backUp   = "/dev/serial/by-path/pci-0000:00:10.0-usb-0:1:1.0-port0"
-  // val backDown = "/dev/serial/by-path/pci-0000:00:10.0-usb-0:2:1.0-port0"
-  
+  // 新豐廠迷你電腦（因沒有接 LC 所以沒有 LC 的 Port）
+  // val mainBoardPort  = "/dev/serial/by-path/pci-0000:00:10.1-usb-0:1:1.0-port0"
+  // val power1Port = "/dev/serial/by-path/pci-0000:00:10.0-usb-0:2:1.0-port0"
+  // val lcrMeterPort   = "/dev/serial/by-path/pci-0000:00:10.0-usb-0:1:1.0-port0"
 
   // ASUS PC
   //val mainBoardPort = "/dev/serial/by-path/pci-0000:00:1a.0-usb-0:1.1:1.0-port0"
@@ -132,14 +132,26 @@ class MainServerThread extends Thread {
     val testingBoard = if (isInRoomTemperature) rtTestingBoard else testingOrder.testingBoard
 
     logger.info("    ==> 開啟充電模式，充電一分鐘……")
+
+    logger.info("      ==> 關閉充放電電路")
     mainBoard.setChargeMode(daughterBoard, testingBoard, 0)
+
+    logger.info("      ==> 開啟電源供應器輸出")
     powerSupply.setVoltage(testingOrder.voltage)
     powerSupply.setOutput(true)
+
+    logger.info("      ==> 開啟充電電路")
     mainBoard.setChargeMode(daughterBoard, testingBoard, 1)
+
+    logger.info("      ==> 等待一分鐘")
     Thread.sleep(60 * 1000)
 
     logger.info("   ==> 關閉充電模式，開始測試 LC 數值")
+
+    logger.info("     ==> 關閉電源供應器輸出")
     powerSupply.setOutput(false)
+
+    logger.info("     ==> 關閉充放電電路")
     mainBoard.setChargeMode(daughterBoard, testingBoard, 0)
 
     for (capacityID <- capacityList) {
@@ -178,6 +190,8 @@ class MainServerThread extends Thread {
             db.updateOvenTestingResultForLC(updatedTestResult)
           }
       }
+      logger.info(s"      ==> 測試完畢，等待三秒鐘")
+      Thread.sleep(1000 * 3)
     }
 
     logger.info("  ==> LC 測試完畢")
@@ -253,6 +267,11 @@ class MainServerThread extends Thread {
     testingResultMap
   }
 
+  def runWithLog[T](log: String, block: => Try[T]): Try[T] = {
+    logger.info(log)
+    block
+  }
+
   /**
    *  執行室溫初始測試
    *
@@ -273,9 +292,9 @@ class MainServerThread extends Thread {
 
         val initialCheckingAndUUID = for {
           powerSupply            <- Try(powerSupplies(testingOrder.daughterBoard))
-          setPowerOff            <- powerSupply.setOutput(false)
-          isHVRelayOK            <- mainBoard.isHVRelayOK(rtDaughterBoard, rtTestingBoard) //! if isHVRelayOK
-          disableChargeDischarge <- mainBoard.setChargeMode(rtDaughterBoard, rtTestingBoard, 0)
+          setPowerOff            <- runWithLog("  ==> 關閉電源供應器輸出", powerSupply.setOutput(false))
+          isHVRelayOK            <- runWithLog("  ==> 檢查 HV Relay……", mainBoard.isHVRelayOK(rtDaughterBoard, rtTestingBoard))
+          disableChargeDischarge <- runWithLog("  ==> 關閉充放電電路", mainBoard.setChargeMode(rtDaughterBoard, rtTestingBoard, 0))
           uuid <- mainBoard.getUUID(0, 0)
         } yield (uuid, powerSupply)
 
@@ -319,6 +338,8 @@ class MainServerThread extends Thread {
       case None => // 如果找不到測試單，自動忽略任何動作，因為之後會把 OvenTestingQueue 裡的東西刪掉，因此不需特別處理
       case Some(testingOrder) =>
 
+        val daughterBoard = testingOrder.daughterBoard
+        val testingBoard = testingOrder.testingBoard
         logger.info("  ==> 測試單：" + testingOrder)
         logger.info("  ==> testingOrder.currentStatus:" + testingOrder.currentStatus)
 
@@ -331,11 +352,14 @@ class MainServerThread extends Thread {
           db.updateTestingOrder(testingOrder.copy(lastTestTime = System.currentTimeMillis, currentStatus = 1))
 
           val initialCheckingAndUUID = for {
-            powerSupply     <- Try(powerSupplies(testingOrder.daughterBoard))
-            setPowerOff     <- powerSupply.setOutput(false)
-            isHVRelayOK     <- mainBoard.isHVRelayOK(testingOrder.daughterBoard, testingOrder.testingBoard) //! if isHVRelayOK
-            enableDischarge <- mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, 2, 10)
-            disableChargeDischarge <- mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, 0)
+            powerSupply             <- Try(powerSupplies(daughterBoard))
+            setPowerOff             <- runWithLog("  ==> 關閉電源供應器輸出", powerSupply.setOutput(false))
+            isHVRelayOK             <- runWithLog("  ==> 檢查高壓 Relay", mainBoard.isHVRelayOK(daughterBoard, testingBoard))
+            disableChargeDischarge  <- runWithLog("  ==> 關閉充放電電路", mainBoard.setChargeMode(daughterBoard, testingBoard, 0))
+            waitFor5Sec             <- runWithLog("  ==> 等五秒", Try{Thread.sleep(1000 * 5)})
+            enableDischarge         <- runWithLog("  ==> 開啟放電電路", mainBoard.setChargeMode(daughterBoard, testingBoard, 2))
+            waitFor5Sec             <- runWithLog("  ==> 等五秒", Try{Thread.sleep(1000 * 5)})
+            disableChargeDischarge  <- runWithLog("  ==> 關閉充放電電路", mainBoard.setChargeMode(daughterBoard, testingBoard, 0))
             uuid            <- mainBoard.getUUID(0, 0)
           } yield (uuid, powerSupply)
 
@@ -360,6 +384,8 @@ class MainServerThread extends Thread {
             case Success((uuid, powerSupply)) => 
               val lcrResult = startLCRMeasurement(testingOrder, false)
               startLCMeasurement(powerSupply, testingOrder, false, lcrResult)
+
+              logger.info("  ==> LCR / LC 測試完成，開啟充電電路")
               mainBoard.setChargeMode(testingOrder.daughterBoard, testingOrder.testingBoard, 1)
           }
 
