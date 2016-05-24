@@ -8,11 +8,17 @@ import scala.util.Try
 import java.util.NoSuchElementException
 import org.slf4j.LoggerFactory
 
+/**
+ *  電源供應器的狀態
+ *
+ *  @param    isOutput      是否開啟電源輸出
+ *  @param    voltage       設定的電壓值
+ */
 case class PowerSupplyStatus(isOutput: Boolean, voltage: Double)
 
 class MainServerThread extends Thread {
 
-
+  
   var shouldStopped = false
   val logger = LoggerFactory.getLogger("LifeTest")
 
@@ -36,7 +42,7 @@ class MainServerThread extends Thread {
   val powerSuppliesPort: Map[Int, String] = Map(0 -> power1Port)
 
   val daughterBoardCount = 3    // 總共有幾組測試子板
-  val capaciyCount = 3         // 一組的電容有幾顆
+  val capaciyCount = 3          // 一組的電容有幾顆
   val rtDaughterBoard = 0       // 室溫測試板的子板編號
   val rtTestingBoard = 0        // 室溫測試板的烤箱板編號
 
@@ -45,7 +51,13 @@ class MainServerThread extends Thread {
   val mainBoard = new MainBoard(mainBoardPort)
   val lcrMeter = new LCRMeter(lcrMeterPort)
   val lcMeter = new RSTLCChecker(lcMeterPort)
-  val powerSupplies: Map[Int, PowerSupplyInterface] = {
+  val powerSupplies: Map[Int, PowerSupplyInterface] = initPowerSupplyRS232()
+  var powerSuppliesStatus: Map[Int, PowerSupplyStatus] = Map.empty
+
+  /**
+   *  初始化各子板的電源供應器 RS232 介面
+   */
+  def initPowerSupplyRS232(): Map[Int, PowerSupplyInterface] = {
     var result: Map[Int, PowerSupplyInterface] = Map.empty
     for (daughterBoard <- 0 until daughterBoardCount) {
 
@@ -57,9 +69,8 @@ class MainServerThread extends Thread {
       result += (daughterBoard -> powerSupply)
     }
     result
-  }
 
-  var powerSuppliesStatus: Map[Int, PowerSupplyStatus] = Map.empty
+  }
   
   /**
    *  檢查烤箱板的 UUID 是否與測試單上室溫測試時的一樣
@@ -121,6 +132,14 @@ class MainServerThread extends Thread {
     }
   }
 
+  /**
+   *  開始進行 LC 漏電流測定
+   *
+   *  @param    powerSupply         該子板的 PowerSupply 的 RS232 物件
+   *  @param    testingOrder        測試單號
+   *  @param    isRoomTemperature   是否是在進行室溫測試
+   *  @param    lcrResultMap        LCR 測定結果（Map[測試時間的 Timestamp, 測試結果]）
+   */
   def startLCMeasurement(powerSupply: PowerSupplyInterface, testingOrder: TestingOrder, 
                          isInRoomTemperature: Boolean, lcrResultMap: Map[Int, TestingResult]) {
 

@@ -4,7 +4,9 @@ import org.apache.commons.daemon.Daemon
 import org.apache.commons.daemon.DaemonContext
 import org.apache.commons.daemon.DaemonInitException
 
-
+/**
+ *  壽命測試機的 JSVC 的 Daemon 包裝用類別
+ */
 class LifeTestDaemon extends Daemon {
 
   val serverThread = new MainServerThread()

@@ -5,52 +5,6 @@ import jssc.SerialPortEvent
 import jssc.SerialPortEventListener
 import scala.util.Try
 
-trait CapacityRange
-
-object Range400nF extends CapacityRange
-object Range4uF extends CapacityRange
-object Range40uF extends CapacityRange
-object Range400uF extends CapacityRange
-object Range4mF extends CapacityRange
-object Range40mF extends CapacityRange
-
-/**
- *  LCR 測定結果
- *
- *  @param  capacityValue     電容值，單位為 uF
- *  @param  capacityStatus    電容值判定結果
- *  @param  dxValue           dx 值
- *  @param  dxStatus          dx 值判定結果
- *  @param  totalStatus       整體判定結果
- */
-case class LCRResult(capacityValue: BigDecimal, capacityStatus: String, dxValue: BigDecimal, dxStatus: String, totalStatus: String) {
-
-  def codeToMargin(marginOfError: String): (BigDecimal, BigDecimal) = marginOfError match {
-    case "A" => (0,             20/100.0)
-    case "B" => (-20/100.0,     0)
-    case "D" => (-25/100.0,     20/100.0)
-    case "K" => (-10/100.0,     10/100.0)
-    case "M" => (-20/100.0,     20/100.0)
-    case "Y" => (-10/100.0,     20/100.0)
-    case _   => (0,             0)
-  }
-
-  def isCapacityOK(standardCapacity: BigDecimal, marginOfError: String) = {
-    val (lowerBound, higherBound) = codeToMargin(marginOfError)
-    capacityValue >= standardCapacity + (standardCapacity * lowerBound) &&
-    capacityValue <= standardCapacity + (standardCapacity * higherBound)
-  }
-
-  def isDXValueOK(standardDXValue: BigDecimal, marginOfError: String) = {
-    val (lowerBound, higherBound) = codeToMargin(marginOfError)
-
-    dxValue >= standardDXValue + (standardDXValue * lowerBound) &&
-    dxValue <= standardDXValue + (standardDXValue * higherBound)
-
-    true
-  }
-}
-
 /**
  *  RST 的 LCR Meter 的 RS232 介面
  *
@@ -143,6 +97,8 @@ class LCRMeter(port: String, baudRate: Int = SerialPort.BAUDRATE_9600, waitForRe
 
   /**
    *  送出命令給 LCR Meter
+   *
+   *  @param      command       要傳送的指令
    */
   def sendCommand(command: String) {
     serialPort.writeBytes(s"$command\r\n".getBytes)
@@ -190,6 +146,8 @@ class LCRMeter(port: String, baudRate: Int = SerialPort.BAUDRATE_9600, waitForRe
 
   /**
    *  設定測試電容範圍
+   *
+   *  @param    range           要設定的測定範圍
    */
   def setRange(range: CapacityRange): Unit = {
     range match {
@@ -204,6 +162,8 @@ class LCRMeter(port: String, baudRate: Int = SerialPort.BAUDRATE_9600, waitForRe
 
   /**
    *  設定測試電容範圍
+   *
+   *  @param    capacityInUF    電容上標示的電容值（單位為 uF）
    */
   def setRange(capacityInUF: BigDecimal): Unit = {
     if (capacityInUF >= 0.02 && capacityInUF <= 0.399) {
