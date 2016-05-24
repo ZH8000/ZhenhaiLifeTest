@@ -886,9 +886,9 @@ class Database(filename: String) {
   def getTestingOrderByPartNo(partNo: String) = {
     var result: List[TestingOrder] = Nil
     val statement = connection.prepareStatement(
-      "SELECT * FROM TestingOrder where partNo = ? ORDER BY id DESC"
+      "SELECT * FROM TestingOrder where partNo LIKE ? ORDER BY id DESC"
     )
-    statement.setString(1, partNo)
+    statement.setString(1, "%" + partNo + "%")
     val cursor = statement.executeQuery()
     while (cursor.next()) {
       result ::= TestingOrder(
