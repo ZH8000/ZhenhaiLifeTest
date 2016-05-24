@@ -1,4 +1,4 @@
-package tw.com.zhenhai.lifetest;
+package tw.com.zhenhai.lifetest
 
 import zhenhai.lifetest.controller.model._
 import org.eclipse.swt._
@@ -6,32 +6,25 @@ import org.eclipse.swt.widgets._
 import org.eclipse.swt.layout._
 import org.eclipse.swt.events._
 
+/**
+ *  「料號查詢」的頁面
+ *
+ *  @param    mainWindowShell   主視窗的 Shell
+ */
 class PartNoQuery(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
+  val gridLayout = MainGridLayout.createLayout(1)
   val navigationButtons = createNavigationButtons()
   val searchComposite = createSearchComposite()
   val searchEntry = createSearchEntry()
   val searchTable = createSearchTable()
 
-  def boardToBlock(daughterBoard: Int, testingBoard: Int): Int = {
-    (daughterBoard, testingBoard) match {
-      case (0, 0) => 1
-      case (0, 1) => 2
-      case (1, 0) => 3
-      case (1, 1) => 4
-      case (2, 0) => 5
-      case (2, 1) => 6
-      case (3, 0) => 7
-      case (3, 1) => 8 
-      case (4, 0) => 9
-      case (4, 1) => 10
-      case (5, 0) => 11
-      case (5, 1) => 12
-      case _      => -1
-    }
-  }
-
-
+  /**
+   *  處理查詢動作
+   *  
+   *  會從資料庫裡撈出料號符合使用者輸入的料號的測試單，並且將其
+   *  填入畫面下方的表格中。
+   */
   def processQuery() {
     val resultData = TestSetting.db.getTestingOrderByPartNo(searchEntry.getText)
     if (resultData.size == 0) {
@@ -52,7 +45,7 @@ class PartNoQuery(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT
         item.setText(5, data.marginOfError)
         item.setText(6, data.testingTime.toString)
         item.setText(7, data.testingInterval.toString)
-        item.setText(8, boardToBlock(data.daughterBoard, data.testingBoard).toString)
+        item.setText(8, BoardToBlock.from(data.daughterBoard, data.testingBoard).toString)
         item.setText(9, data.statusDescription)
         item.setData(data)
       }
@@ -66,6 +59,11 @@ class PartNoQuery(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT
     }
   }
 
+  /**
+   *  建立用來整合文字標籤和搜尋框成為一個單元的 Compsoite 物件
+   *
+   *  @return       用來整合的 Composite 物件
+   */
   def createSearchComposite() = {
     val composite = new Composite(this, SWT.NONE)
     val compositeLayoutData = new GridData
@@ -78,6 +76,11 @@ class PartNoQuery(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT
     composite
   }
 
+  /**
+   *  建立搜尋的文字方塊
+   *
+   *  @return     搜尋的文字方塊
+   */
   def createSearchEntry() = {
 
     val title = new Label(searchComposite, SWT.LEFT)
@@ -104,6 +107,11 @@ class PartNoQuery(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT
     textEntry
   }
 
+  /**
+   *  建立畫面下方的的搜尋結果表格
+   *
+   *  @return       搜尋結果的表格
+   */
   def createSearchTable() = {
     val dataTable = new Table(searchComposite, SWT.BORDER)
     val dataTableLayoutData = new GridData(SWT.FILL, SWT.FILL, true, true)
@@ -154,18 +162,11 @@ class PartNoQuery(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT
     dataTable
   }
 
-  def init() {
-
-    val gridLayout = new GridLayout(1, true)
-
-    gridLayout.horizontalSpacing = 20
-    gridLayout.verticalSpacing = 20
-    //gridLayout.marginWidth = 200
-    //gridLayout.marginHeight = 200
-
-    this.setLayout(gridLayout)
-  }
-
+  /**
+   *  建立畫面右上方的導覽按鈕
+   *
+   *  @return     導覽按鈕
+   */
   def createNavigationButtons() = {
     val navigationButtons = new NavigationButtons(this)
     val navigationButtonsLayoutData = new GridData
@@ -177,6 +178,12 @@ class PartNoQuery(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT
     navigationButtons
   }
 
+  /**
+   *  初始化並設定 Layout 物件
+   */
+  def init() {
+    this.setLayout(gridLayout)
+  }
 
   init()
 }

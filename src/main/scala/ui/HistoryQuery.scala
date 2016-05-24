@@ -5,19 +5,23 @@ import org.eclipse.swt.widgets._
 import org.eclipse.swt.layout._
 import org.eclipse.swt.events._
 
+/**
+ *  用來顯示「歷史資料」（以月曆形式選擇日期）的頁面
+ *
+ *  @param    mainWindowShell     主視窗物件
+ */
 class HistoryQuery(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
-  def init() = {
+  val gridLayout = MainGridLayout.createLayout(1)
+  val navigationButtons = createNavigationButtons()
+  val calendar = createCalendar()
 
-    val gridLayout = new GridLayout(1, true)
-
-    gridLayout.horizontalSpacing = 20
-    gridLayout.verticalSpacing = 20
-    // gridLayout.marginWidth = 200
-    // gridLayout.marginHeight = 200
-
-    this.setLayout(gridLayout)
-
+  /**
+   *  建立右上方的導覽按鈕
+   *
+   *  @return   導覽按鈕
+   */
+  def createNavigationButtons() = {
     val navigationButtons = new NavigationButtons(this)
     val navigationButtonsLayoutData = new GridData
     navigationButtonsLayoutData.heightHint = 50
@@ -25,7 +29,15 @@ class HistoryQuery(mainWindowShell: Shell) extends Composite(mainWindowShell, SW
     navigationButtonsLayoutData.horizontalAlignment = GridData.END
     navigationButtonsLayoutData.grabExcessHorizontalSpace = true
     navigationButtons.setLayoutData(navigationButtonsLayoutData)
+    navigationButtons
+  }
 
+  /**
+   *  建立月曆元件
+   *
+   *  @return       月曆元件
+   */
+  def createCalendar() = {
     val calendar = new DateTime (this, SWT.CALENDAR)
     val calendarLayoutData = new GridData
     calendarLayoutData.widthHint = 400
@@ -42,6 +54,10 @@ class HistoryQuery(mainWindowShell: Shell) extends Composite(mainWindowShell, SW
         MainWindow.pushComposite(queryResultWindow)
       }
     })
+  }
+
+  def init() = {
+    this.setLayout(gridLayout)
   }
 
   init()

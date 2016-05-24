@@ -8,54 +8,17 @@ import org.eclipse.swt.events._
 /**
  *  此類別用來顯示「歷史資料」（用日期來查詢）的查詢結果，會以列表的方式來
  *  顯示該日期內，有進行的測試。
+ *
+ *  @param    mainWindowShell   主視窗物件
+ *  @param    dateString        以 yyyy-MM-dd 的字串形式表示的查詢日期
  */
 class HistoryQueryResult(mainWindowShell: Shell, dateString: String) extends Composite(mainWindowShell, SWT.NONE) {
 
-  val gridLayout = createMainLayout()
+  val gridLayout = MainGridLayout.createLayout(2)
   val titleLabel = createTitleLabel()
   val navigationButtons = createNavigationButtons()
   val dataTable = createDataTable()
   val dataList = TestSetting.db.getTestingForDate(dateString)
-
-  /**
-   *  從（子板、烤相板）的編號方式，來推出在監控程式上顯示的區塊編號
-   *
-   *  @param    daughterBoard       子板編號
-   *  @param    testingBoard        烤箱板編號
-   *  @return                       區塊編號
-   */
-  def boardToBlock(daughterBoard: Int, testingBoard: Int): Int = {
-    (daughterBoard, testingBoard) match {
-      case (0, 0) => 1
-      case (0, 1) => 2
-      case (1, 0) => 3
-      case (1, 1) => 4
-      case (2, 0) => 5
-      case (2, 1) => 6
-      case (3, 0) => 7
-      case (3, 1) => 8 
-      case (4, 0) => 9
-      case (4, 1) => 10
-      case (5, 0) => 11
-      case (5, 1) => 12
-      case _      => -1
-    }
-  }
-
-  /**
-   *  建立此頁的主要 Layout 元件（GridLayout）
-   *
-   *  @return     GridLayout 物件
-   */
-  def createMainLayout() = {
-    val gridLayout = new GridLayout(2, true)
-
-    gridLayout.horizontalSpacing = 20
-    gridLayout.verticalSpacing = 20
-    // gridLayout.marginWidth = 200
-    // gridLayout.marginHeight = 200
-    gridLayout
-  }
 
   /**
    *  建立頁面上方的「查詢日期」的標頭的文字標籤
@@ -159,7 +122,7 @@ class HistoryQueryResult(mainWindowShell: Shell, dateString: String) extends Com
       item.setText(5, data.marginOfError)
       item.setText(6, data.testingTime.toString)
       item.setText(7, data.testingInterval.toString)
-      item.setText(8, boardToBlock(data.daughterBoard, data.testingBoard).toString)
+      item.setText(8, BoardToBlock.from(data.daughterBoard, data.testingBoard).toString)
       item.setText(9, data.statusDescription)
     }
 
