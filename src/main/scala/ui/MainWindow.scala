@@ -1,4 +1,4 @@
-package tw.com.zhenhai.lifetest;
+package tw.com.zhenhai.lifetest
 
 import org.eclipse.swt._
 import org.eclipse.swt.widgets.{List => SWTList, _}

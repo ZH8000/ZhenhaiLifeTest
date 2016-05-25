@@ -48,7 +48,7 @@ class LoginWindow(parent: Composite) extends Composite(parent, SWT.NONE) {
     val button = new Button(this, SWT.PUSH)
     val buttonLayoutData = new GridData
     buttonLayoutData.horizontalSpan = 2
-    buttonLayoutData.horizontalAlignment = GridData.FILL;
+    buttonLayoutData.horizontalAlignment = GridData.FILL
     button.setLayoutData(buttonLayoutData)
     button.setText("登入")
     this.getShell.setDefaultButton(button)

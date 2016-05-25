@@ -46,7 +46,7 @@ class MainServerThread extends Thread {
   val rtDaughterBoard = 0       // 室溫測試板的子板編號
   val rtTestingBoard = 0        // 室溫測試板的烤箱板編號
 
-  val db = TestSetting.db
+  val db = LifeTestOptions.db
 
   val mainBoard = new MainBoard(mainBoardPort)
   val lcrMeter = new LCRMeter(lcrMeterPort)

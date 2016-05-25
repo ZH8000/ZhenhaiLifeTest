@@ -110,9 +110,9 @@ class AreaInfo(mainWindowShell: Shell, parent: Composite, areaNumber: Int,
    *  依照資料庫裡的資料來更新測試區塊的狀態
    */
   def updateAreaInfo() {
-    this.orderInfoHolder = TestSetting.db.getTestingOrderByBlock(daughterBoard, testingBoard)
+    this.orderInfoHolder = LifeTestOptions.db.getTestingOrderByBlock(daughterBoard, testingBoard)
     orderInfoHolder.foreach { orderInfo =>
-      val goodCount = TestSetting.db.getGoodCount(orderInfo.id)
+      val goodCount = LifeTestOptions.db.getGoodCount(orderInfo.id)
       val isNotDisposed = !partNo.isDisposed && !okCount.isDisposed && !testedTime.isDisposed && !status.isDisposed
 
       if (isNotDisposed) {

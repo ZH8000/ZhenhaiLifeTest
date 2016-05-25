@@ -26,7 +26,7 @@ class PartNoQuery(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT
    *  填入畫面下方的表格中。
    */
   def processQuery() {
-    val resultData = TestSetting.db.getTestingOrderByPartNo(searchEntry.getText)
+    val resultData = LifeTestOptions.db.getTestingOrderByPartNo(searchEntry.getText)
     if (resultData.size == 0) {
       val messageBox = new MessageBox(mainWindowShell, SWT.OK)
       messageBox.setMessage("查無資料")

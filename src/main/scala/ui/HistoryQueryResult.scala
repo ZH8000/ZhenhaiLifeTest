@@ -1,4 +1,4 @@
-package tw.com.zhenhai.lifetest;
+package tw.com.zhenhai.lifetest
 
 import org.eclipse.swt._
 import org.eclipse.swt.widgets._
@@ -18,7 +18,7 @@ class HistoryQueryResult(mainWindowShell: Shell, dateString: String) extends Com
   val titleLabel = createTitleLabel()
   val navigationButtons = createNavigationButtons()
   val dataTable = createDataTable()
-  val dataList = TestSetting.db.getTestingForDate(dateString)
+  val dataList = LifeTestOptions.db.getTestingForDate(dateString)
 
   /**
    *  建立頁面上方的「查詢日期」的標頭的文字標籤

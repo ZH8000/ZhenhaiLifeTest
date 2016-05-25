@@ -19,7 +19,7 @@ import java.text.SimpleDateFormat
 class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, 
                           capacityID: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
-  lazy val testingResult = TestSetting.db.getAllTestingResult(orderInfo.id, capacityID).toArray
+  lazy val testingResult = LifeTestOptions.db.getAllTestingResult(orderInfo.id, capacityID).toArray
 
   val gridLayout = MainGridLayout.createLayout(3)
   val title = createTitleLabel()
