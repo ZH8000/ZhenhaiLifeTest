@@ -5,7 +5,7 @@ import jssc.SerialPortEvent
 import jssc.SerialPortEventListener
 
 /**
- *  測試範圍
+ *  LC 測試儀的測定範圍
  */
 sealed trait RangeSetting
 

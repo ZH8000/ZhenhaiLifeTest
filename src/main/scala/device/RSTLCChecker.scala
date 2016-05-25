@@ -3,6 +3,7 @@ package zhenhai.lifetest.controller.device
 import jssc.SerialPort
 import jssc.SerialPortEvent
 import jssc.SerialPortEventListener
+import scala.util.Try
 
 /**
  *  RST 的 LC Checker 的 RS232 介面
@@ -106,7 +107,7 @@ class RSTLCChecker(port: String, baudRate: Int = SerialPort.BAUDRATE_9600, waitF
    *
    *  @return       測定結果
    */
-  def startMeasure(): LCResult = {
+  def startMeasure(): Try[LCResult] = Try {
 
     // 透過 RS232 送過 Trigger
     sendCommand("E")
@@ -122,7 +123,7 @@ class RSTLCChecker(port: String, baudRate: Int = SerialPort.BAUDRATE_9600, waitF
     }
 
     if (numberOfTries > 10) {
-      throw new Exception("LCR-821 RS232 Mesaurement Response Timeout")
+      throw LCCheckerRS232Timeout
     } else {
       dataResultQueue.dequeue
     }

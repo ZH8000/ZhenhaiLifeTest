@@ -22,6 +22,12 @@ import jssc.SerialPortEventListener
  *  @param    isOverleakOK      Overleak 判定，true 為 OK 的狀態，false 為 NG
  *  @param    isConductiveOK    true 為 OK，false 為 NG
  */
-case class LCResult(coeffection: Int, exponential: Int, currentStatus: String, isOverleakOK: Boolean, isConductiveOK: Boolean)
+case class LCResult(coeffection: Int, exponential: Int, currentStatus: String, isOverleakOK: Boolean, isConductiveOK: Boolean) {
+
+  /**
+   *  測定出來的漏電流，單位為 mA
+   */
+  def leakCurrent = BigDecimal(coeffection) * BigDecimal(Math.pow(10, exponential)) * BigDecimal(Math.pow(10, 6))
+}
 
 

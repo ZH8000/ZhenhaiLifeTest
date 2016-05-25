@@ -1,4 +1,4 @@
-package tw.com.zhenhai.lifetest;
+package tw.com.zhenhai.lifetest
 
 import org.eclipse.swt._
 import org.eclipse.swt.widgets.{List => SWTList, _}
@@ -79,7 +79,7 @@ object MainWindow extends StackableWindow {
     shell.setMaximized(true)
     pushComposite(new MainMenu(shell))
     //shell.setSize(shell.getDisplay.getBounds.width, shell.getDisplay.getBounds.height)
-    shell.setFullScreen(true)
+    //shell.setFullScreen(true)
     shell.addDisposeListener(new DisposeListener() {
       def widgetDisposed(event: DisposeEvent) {
         // When the child shell is disposed, change the message on the main shell

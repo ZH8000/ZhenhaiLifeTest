@@ -1,4 +1,4 @@
-package tw.com.zhenhai.lifetest;
+package tw.com.zhenhai.lifetest
 
 import jssc.SerialPortList
 

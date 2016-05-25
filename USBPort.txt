@@ -1,0 +1,46 @@
+PowerSupply /dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4:1.0-port0
+LC Checker  /dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2:1.0-port0
+MainBoard   /dev/serial/by-path/pci-0000:00:14.0-usb-0:1.5:1.0-port0
+LCRChecker  /dev/serial/by-path/pci-0000:00:14.0-usb-0:1.7:1.0-port0
+
+
+
+import zhenhai.lifetest.controller.device._
+val mainBoard = new MainBoard("/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.7:1.0-port0")
+val powerSupply = new GENH600("/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.5:1.0-port0")
+val lcrMeter = new LCRMeter("/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2:1.0-port0")
+val lcChecker = new RSTLCChecker("/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4:1.0-port0")
+mainBoard.open
+mainBoard.getUUID(0, 0)
+mainBoard.setLCRChannel(0, 0, 1)
+lcrMeter.open
+lcrMeter.startMeasure
+lcChecker.open
+lcChecker.startMeasure
+powerSupply.open
+powerSupply.setVoltage(35)
+powerSupply.setOutput(true)
+powerSupply.setOutput(false)
+
+ToshibaZ30 USB HUB
+===================
+
+上方（左到右，左邊為 esence 標誌）
+1. pci-0000:00:14.0-usb-0:1.7:1.0-port0
+2. pci-0000:00:14.0-usb-0:1.5:1.0-port0
+3. pci-0000:00:14.0-usb-0:1.2:1.0-port0
+4. pci-0000:00:14.0-usb-0:1.4:1.0-port0
+
+下左（左到右）
+
+1. pci-0000:00:14.0-usb-0:1.6:1.0-port0
+2. pci-0000:00:14.0-usb-0:1.1:1.0-port0
+3. pci-0000:00:14.0-usb-0:1.3:1.0-port0
+
+ASUS PC
+===============
+
+MainBoard   /dev/serial/by-path/pci-0000:00:1a.0-usb-0:1.1:1.0-port0    第一個 USB
+PowerSupply /dev/serial/by-path/pci-0000:00:1a.0-usb-0:1.2:1.0-port0    第二個
+LCR         /dev/serial/by-path/pci-0000:00:1a.0-usb-0:1.3:1.0-port0
+LC          /dev/serial/by-path/pci-0000:00:1a.0-usb-0:1.4:1.0-port0

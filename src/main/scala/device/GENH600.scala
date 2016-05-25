@@ -5,17 +5,61 @@ import jssc.SerialPortEvent
 import jssc.SerialPortEventListener
 import scala.util.Try
 
+/**
+ *  電源供應器的界面定義
+ */
 trait PowerSupplyInterface {
 
+  /**
+   *  設定電壓
+   *
+   *  @param    voltage   電壓值
+   *  @return             如果設定成功就回傳 Success(true) 
+   */
   def setVoltage(voltage: Double): Try[Boolean]
+
+  /**
+   *  設定是否進行直流電輸出
+   *
+   *  @param  isOutput    如果要輸出直流電就傳 true
+   *  @return             如果設定成功就回傳 Success(true) 
+   */
   def setOutput(isOutput: Boolean): Try[Boolean]
+
+  /**
+   *  取得電壓設定
+   *
+   *  @return       Success(目前設定的電壓值) / Failure(失敗原因)
+   */
   def getVoltageSetting(): Try[Double]
+
+  /**
+   *  取得是否開啟電源輸出
+   *
+   *  @return       Success(是否輸出) / Failure(失敗原因)
+   */
   def getIsOutput(): Try[Boolean]
+
+  /**
+   *  開啟電源供應器通訊介面
+   *
+   *  @return       Success(是否成功開啟) / Failure(失敗原因)
+   */
   def open(): Try[Boolean]
+
+  /**
+   *  關閉
+   */
   def close(): Unit
 
 }
 
+/**
+ *  因為在測試流程 Daemon 中，必須每一個子板都有一個電源供應器可用，
+ *  但現在實際上只有一台，因此使用此 DummyPowerSupply 做為模擬。
+ *
+ *  @param    daughterBoard       該子板的編號
+ */
 class DummyPowerSupply(daughterBoard: Int) extends PowerSupplyInterface {
 
   var voltage: Double = 0
@@ -152,7 +196,13 @@ class GENH600(port: String, deviceAddress: Int = 0, baudRate: Int = SerialPort.B
     serialPort.openPort()
     serialPort.setParams(baudRate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE)
     setResponseCallback()
-    sendCommand("ADR " + "%02d".format(deviceAddress)).map(_ == "OK")
+
+    // Power Supply 有時會有 BUG，導致開機後的第一個 RS232 指令不會有回應，所以
+    // 要送一個 dummy 的指令，讓 Power Supply 回復正常。
+    sendCommand("ADR %02d".format(deviceAddress))
+
+    // 這個指令才真的會有來自 Power Supply 的回覆訊息
+    sendCommand("ADR %02d".format(deviceAddress)).map(_ == "OK")
   }
 
   /**

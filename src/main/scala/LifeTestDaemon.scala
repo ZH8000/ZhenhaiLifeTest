@@ -4,7 +4,9 @@ import org.apache.commons.daemon.Daemon
 import org.apache.commons.daemon.DaemonContext
 import org.apache.commons.daemon.DaemonInitException
 
-
+/**
+ *  壽命測試機的 JSVC 的 Daemon 包裝用類別
+ */
 class LifeTestDaemon extends Daemon {
 
   val serverThread = new MainServerThread()
@@ -18,7 +20,7 @@ class LifeTestDaemon extends Daemon {
 
   override def stop() {
     serverThread.shouldStopped = true
-    serverThread.join(1000 * 60)
+    serverThread.join(1000 * 5)
   }
 
   override def init(context: DaemonContext) { }
