@@ -1,4 +1,4 @@
-package tw.com.zhenhai.lifetest;
+package tw.com.zhenhai.lifetest
 
 import zhenhai.lifetest.controller.model._
 import org.eclipse.swt._
@@ -8,96 +8,36 @@ import org.eclipse.swt.events._
 import java.util.Date
 import java.text.SimpleDateFormat
 
-trait ChartType
-object CapacityValueChart extends ChartType
-object DXValueChart extends ChartType
-object LCValueChart extends ChartType
+/**
+ *  電容測試結果詳細圖表頁面
+ *
+ *  @param    blockNo           測試區塊編號
+ *  @param    orderInfo         測試單物件
+ *  @param    capacityID        電容編號
+ *  @param    mainWindowShell   主視窗的 Shell 物件
+ */
+class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, 
+                          capacityID: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
-class CapacityTestChart(title: String, capacityID: Int, chartType: ChartType, testingResult: Array[TestingResult]) {
-  
-  import org.jfree.data.xy.XYDataset
-  import org.jfree.data.xy.XYSeries
-  import org.jfree.data.xy.XYSeriesCollection
-  import org.jfree.data.time._
-  import org.jfree.chart.ChartFactory
-  import org.jfree.experimental.chart.swt.ChartComposite
-  import org.jfree.chart.plot.PlotOrientation
-  import org.jfree.chart.plot.XYPlot
-  import java.awt.Color
-  import org.jfree.chart.axis.NumberAxis
-  import org.jfree.chart.axis.NumberTickUnit
+  lazy val testingResult = LifeTestOptions.db.getAllTestingResult(orderInfo.id, capacityID).toArray
 
-  lazy val dataset = createDataSet
-  lazy val chart = {
-    val chart = ChartFactory.createTimeSeriesChart(title, "時間", title, dataset)
-    val rangeAxis = chart.getXYPlot.getRangeAxis.asInstanceOf[NumberAxis]
-    rangeAxis.setUpperBound(rangeAxis.getUpperBound + 2)
-    rangeAxis.setLowerBound(rangeAxis.getLowerBound - 2)
-    rangeAxis.setTickUnit(new NumberTickUnit(0.5))
-    val plot = chart.getPlot.asInstanceOf[XYPlot]
-    val renderer = plot.getRenderer.asInstanceOf[org.jfree.chart.renderer.xy.XYLineAndShapeRenderer]
-    renderer.setSeriesLinesVisible(0, true)
-    renderer.setSeriesShapesVisible(0, true)
-    chart.setBackgroundPaint(Color.LIGHT_GRAY)
-    chart
-  }
+  val gridLayout = MainGridLayout.createLayout(3)
+  val title = createTitleLabel()
+  val capacityTitle = createCapacityTitle()
+  val navigationButtons = createNavigationButtons()
+  val tabFolder = createTabFolder()
 
-  def createDXValueDataset = {
-    val series = new TimeSeries(title)
-    for (row <- testingResult) {
-      val timestamp = new Date(row.timestamp)
-      series.add(new Second(timestamp) , row.dxValue)
-    }
-    new TimeSeriesCollection(series)
-  }
-
-  def createLCValueDataset = {
-    val series = new TimeSeries(title)
-    for (row <- testingResult) {
-      val timestamp = new Date(row.timestamp)
-      series.add(new Second(timestamp) , row.leakCurrent)
-    }
-    new TimeSeriesCollection(series)
-  }
-
-
-  def createCapacityValueDataset = {
-    val series = new TimeSeries(title)
-    for (row <- testingResult) {
-      val timestamp = new Date(row.timestamp)
-      series.add(new Second(timestamp) , row.capacity)
-    }
-    new TimeSeriesCollection(series)
-  }
-
-
-  def createDataSet = {
-
-    chartType match {
-      case CapacityValueChart => createCapacityValueDataset
-      case DXValueChart => createDXValueDataset
-      case LCValueChart => createLCValueDataset
-    }
-  }
-
-  def createChartComposite(parent: Composite) = {
-    val composite = new ChartComposite(parent, SWT.NONE, chart, false, false, false, false, true)
-    composite.setDomainZoomable(false)
-    composite.setRangeZoomable(false)
-    composite
-  }
-
-}
-
-class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, capacityID: Int, mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
-
-  lazy val testingResult = TestSetting.db.getAllTestingResult(orderInfo.id, capacityID).toArray
-
+  /**
+   *  建立折線圖的 Composite
+   *
+   *  @param      parent    上一層的 Composite
+   *  @return               放三張折線圖的 Composite
+   */
   def createChartComposite(parent: Composite) = {
     val composite = new Composite(parent, SWT.NONE)
     composite.setLayout(new GridLayout(3, true))
 
-    val chart1 = new CapacityTestChart("電容值", capacityID, CapacityValueChart, testingResult)
+    val chart1 = new TestResultChart("電容值", capacityID, CapacityValueChart, testingResult)
     val chart1Composite = chart1.createChartComposite(composite)
     val chart1CompositeLayoutData = new GridData
     chart1CompositeLayoutData.horizontalAlignment = GridData.FILL
@@ -106,7 +46,7 @@ class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, capacityID: Int
     chart1CompositeLayoutData.grabExcessVerticalSpace = true
     chart1Composite.setLayoutData(chart1CompositeLayoutData)
 
-    val chart2 = new CapacityTestChart("損失角", capacityID,DXValueChart, testingResult)
+    val chart2 = new TestResultChart("損失角", capacityID,DXValueChart, testingResult)
     val chart2Composite = chart2.createChartComposite(composite)
     val chart2CompositeLayoutData = new GridData
     chart2CompositeLayoutData.horizontalAlignment = GridData.FILL
@@ -115,7 +55,7 @@ class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, capacityID: Int
     chart2CompositeLayoutData.grabExcessVerticalSpace = true
     chart2Composite.setLayoutData(chart2CompositeLayoutData)
 
-    val chart3 = new CapacityTestChart("漏電流", capacityID, LCValueChart, testingResult)
+    val chart3 = new TestResultChart("漏電流", capacityID, LCValueChart, testingResult)
     val chart3Composite = chart3.createChartComposite(composite)
     val chart3CompositeLayoutData = new GridData
     chart3CompositeLayoutData.horizontalAlignment = GridData.FILL
@@ -127,6 +67,12 @@ class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, capacityID: Int
     composite
   }
 
+  /**
+   *  建立顯示測試結果的表格元件
+   *
+   *  @param      parent    上一層的 Composite
+   *  @return               放三張折線圖的 Composite
+   */
   def createDataTable(parent: Composite) = {
     val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
     val timeFormatter = new SimpleDateFormat("HH:mm:ss")
@@ -179,29 +125,40 @@ class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, capacityID: Int
       column.setWidth(column.getWidth + 150)
     }
 
-
     dataTable
   }
 
-  def init() {
-    val gridLayout = new GridLayout(3, true)
-
-    gridLayout.horizontalSpacing = 20
-    gridLayout.verticalSpacing = 20
-    // gridLayout.marginWidth = 200
-    // gridLayout.marginHeight = 200
-
-    this.setLayout(gridLayout)
-
+  /**
+   *  建立標題的文字標籤
+   *
+   *  @return       標題的文字標籤
+   */
+  def createTitleLabel() = {
     val title = new Label(this, SWT.NONE)
     title.setText(s"區塊 $blockNo         料號：${orderInfo.partNo}")
+    title
+  }
 
-    val dateTitle = new Label(this, SWT.NONE)
-    val dateTitleLayoutData = new GridData
-    dateTitleLayoutData.horizontalAlignment = GridData.CENTER
-    dateTitle.setLayoutData(dateTitleLayoutData)
-    dateTitle.setText(s"電容 $capacityID")
+  /**
+   *  建立電容標編號標頭
+   *  
+   *  @return     電容編號標頭的文字標籤
+   */
+  def createCapacityTitle() = {
+    val capacityTitle = new Label(this, SWT.NONE)
+    val capacityTitleLayoutData = new GridData
+    capacityTitleLayoutData.horizontalAlignment = GridData.CENTER
+    capacityTitle.setLayoutData(capacityTitleLayoutData)
+    capacityTitle.setText(s"電容 $capacityID")
+    capacityTitle
+  }
 
+  /**
+   *  建立導覽按鈕
+   *
+   *  @return     導覽按鈕
+   */
+  def createNavigationButtons() = {
     val navigationButtons = new NavigationButtons(this)
     val navigationButtonsLayoutData = new GridData
     navigationButtonsLayoutData.heightHint = 50
@@ -209,22 +166,39 @@ class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder, capacityID: Int
     navigationButtonsLayoutData.horizontalAlignment = GridData.END
     navigationButtonsLayoutData.grabExcessHorizontalSpace = true
     navigationButtons.setLayoutData(navigationButtonsLayoutData)
+    navigationButtons
+  }
 
+  /**
+   *  建立 TabFolder
+   *
+   *  @return     TabFolder 物件
+   */
+  def createTabFolder() = {
     val tabFolder = new TabFolder(this, SWT.NONE)
     val tabFolderLayoutData = new GridData(SWT.FILL, SWT.FILL, true, true)
     tabFolderLayoutData.horizontalSpan = 3
     tabFolder.setLayoutData(tabFolderLayoutData)
-
-
-    val tabItem1 = new TabItem(tabFolder, SWT.NONE)
-    val tabItem2 = new TabItem(tabFolder, SWT.NONE)
+    tabFolder
+  }
+  
+  /**
+   *  設定 TabFolder 裡面的物件
+   */
+  def setupTabItems() {
     val chartComposite = createChartComposite(tabFolder)
     val dataTable = createDataTable(tabFolder)
-
+    val tabItem1 = new TabItem(tabFolder, SWT.NONE)
+    val tabItem2 = new TabItem(tabFolder, SWT.NONE)
     tabItem1.setText("測試數據")
     tabItem2.setText("折線圖")
     tabItem1.setControl(dataTable)
     tabItem2.setControl(chartComposite)
+  }
+
+  def init() {
+    this.setLayout(gridLayout)
+    setupTabItems()
   }
 
   init()

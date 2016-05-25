@@ -1,16 +1,28 @@
-package tw.com.zhenhai.lifetest;
+package tw.com.zhenhai.lifetest
 
 import org.eclipse.swt._
 import org.eclipse.swt.widgets._
 import org.eclipse.swt.layout._
 import org.eclipse.swt.events._
 
-class LoginWindow(parent: Composite, style: Int) extends Composite(parent, style) {
+/**
+ *  用來顯示登入頁面的類別
+ *
+ *  @param    parent    上一層的 Composite
+ */
+class LoginWindow(parent: Composite) extends Composite(parent, SWT.NONE) {
 
   val (usernameLabel, usernameTextEntry) = createEntryRow("帳號：")
   val (passwordLabel, passwordTextEntry) = createEntryRow("密碼：", SWT.PASSWORD)
   val loginButton = createLoginButton()
 
+  /**
+   *  建立附帶文字標籤的文字方塊
+   *
+   *  @param    title                 標題
+   *  @param    textEntryStyle        文字方塊的 Style（例如設定 SWT.PASSWORD 的話就會是輸入密碼的風格）
+   *  @return                         (文字標籤, 文字方塊) 的 Tuple
+   */
   def createEntryRow(title: String, textEntryStyle: Int = SWT.NONE) = {
 
     val label = new Label(this, SWT.LEFT)
@@ -27,11 +39,16 @@ class LoginWindow(parent: Composite, style: Int) extends Composite(parent, style
 
   }
 
+  /**
+   *  建立「登入」的按鈕
+   *
+   *  @return       登入的按鈕
+   */
   def createLoginButton() {
     val button = new Button(this, SWT.PUSH)
     val buttonLayoutData = new GridData
     buttonLayoutData.horizontalSpan = 2
-    buttonLayoutData.horizontalAlignment = GridData.FILL;
+    buttonLayoutData.horizontalAlignment = GridData.FILL
     button.setLayoutData(buttonLayoutData)
     button.setText("登入")
     this.getShell.setDefaultButton(button)
@@ -42,6 +59,12 @@ class LoginWindow(parent: Composite, style: Int) extends Composite(parent, style
     })
   }
 
+  /**
+   *  處理使用者登入
+   *
+   *  @param    username      輸入使用者名稱
+   *  @param    password      輸入的密碼
+   */
   def processLogin(username: String, password: String) {
 
     if (username == "test" && password == "test") {
@@ -58,35 +81,4 @@ class LoginWindow(parent: Composite, style: Int) extends Composite(parent, style
 
   this.setLayout(new GridLayout(2, false))
 
-}
-
-object LoginWindow {
-
-  def main(args: Array[String]) {
-    val display = new Display
-    val shell = new Shell(display)
-
-    val layout = new GridLayout(1, false)
-    shell.setLayout(layout)
-   
-    val loginFrame = new LoginWindow(shell, SWT.NONE)
-    val gridData = new GridData
-    gridData.horizontalAlignment = GridData.CENTER
-    gridData.grabExcessHorizontalSpace = true
-    gridData.verticalAlignment = GridData.CENTER
-    gridData.grabExcessVerticalSpace = true
-
-    loginFrame.setLayoutData(gridData)
-    //shell.setSize(shell.getDisplay.getBounds.width, shell.getDisplay.getBounds.height)
-    shell.setMaximized(true)
-    //shell.setFullScreen(true)
-    shell.open()
-    
-    while (!shell.isDisposed()) {
-      if (!display.readAndDispatch()) {
-        display.sleep()
-      }
-    }
-    display.dispose()
-  }
 }

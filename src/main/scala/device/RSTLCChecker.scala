@@ -123,7 +123,7 @@ class RSTLCChecker(port: String, baudRate: Int = SerialPort.BAUDRATE_9600, waitF
     }
 
     if (numberOfTries > 10) {
-      throw new Exception("LCR-821 RS232 Mesaurement Response Timeout")
+      throw LCCheckerRS232Timeout
     } else {
       dataResultQueue.dequeue
     }
