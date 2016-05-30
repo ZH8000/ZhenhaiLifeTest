@@ -67,6 +67,11 @@ class Database(filename: String) {
     }
   }
 
+  /**
+   *  將測試單加入烤箱測試事前 UUID 檢查佇列中
+   *
+   *  @param    testingID       測試單號
+   */
   def insertOvenUUIDCheckingQueue(testingID: Long) {
     var resultList: List[RoomTemperatureTestingQueue] = Nil
     val statement = connection.prepareStatement(
@@ -77,6 +82,12 @@ class Database(filename: String) {
     statement.executeUpdate()
   }
 
+  /**
+   *  取得某測試單號在烤箱測試 UUID 檢查佇列中的最新狀態
+   *
+   *  @param    testingID       測試單號
+   *  @return                   最新的狀態
+   */
   def getOvenUUIDCheckingQueue(testingID: Long): Option[OvenUUIDCheckingQueue] = {
     var resultList: List[OvenUUIDCheckingQueue] = Nil
     val statement = connection.prepareStatement(
@@ -99,7 +110,11 @@ class Database(filename: String) {
   }
 
 
-
+  /**
+   *  將測試單加入室溫測試佇列中
+   *
+   *  @param    testingID       測試單號
+   */
   def insertRoomTemperatureTestingQueue(testingID: Long) {
     var resultList: List[RoomTemperatureTestingQueue] = Nil
     val statement = connection.prepareStatement(
@@ -110,6 +125,12 @@ class Database(filename: String) {
     statement.executeUpdate()
   }
 
+  /**
+   *  取得某測試單號室溫測試佇列中的最新狀態
+   *
+   *  @param    testingID       測試單號
+   *  @return                   最新的狀態
+   */
   def getRoomTemperatureTestingQueue(testingID: Long): Option[RoomTemperatureTestingQueue] = {
     var resultList: List[RoomTemperatureTestingQueue] = Nil
     val statement = connection.prepareStatement(
@@ -401,6 +422,11 @@ class Database(filename: String) {
     statement.close()
   }
 
+  /**
+   *  從資料庫中刪除測試單
+   *
+   *  @param    testingID     要刪除的測試單
+   */
   def deleteTestingOrder(testingID: Long) {
     val statement = connection.prepareStatement(
       "DELETE FROM TestingOrder WHERE id=?"
@@ -410,6 +436,11 @@ class Database(filename: String) {
     statement.close()
   }
 
+  /**
+   *  從烤箱事前 UUID 檢查佇列中刪除測試單
+   *
+   *  @param    testingID     要刪除的測試單
+   */
   def deleteOvenUUIDCheckingQueue(testingID: Long) {
     val statement = connection.prepareStatement(
       "DELETE FROM OvenUUIDCheckingQueue WHERE testingID=?"
@@ -420,7 +451,11 @@ class Database(filename: String) {
   }
 
 
-
+  /**
+   *  從室溫測試佇列中刪除測試單
+   *
+   *  @param    testingID     要刪除的測試單
+   */
   def deleteTemperatureTest(testingID: Long) {
     val statement = connection.prepareStatement(
       "DELETE FROM RoomTemperatureTestingQueue WHERE testingID=?"
@@ -700,6 +735,13 @@ class Database(filename: String) {
   }
 
 
+  /**
+   *  取得某個烤箱測試板目前正在執行的測試單
+   *
+   *  @param    daughterBoard       子板編號
+   *  @param    testBoard           測試板編號
+   *  @return                       如果沒有正在進行的測試單則為 None，否則為 Some(測試單)
+   */
   def getTestingOrderByBlock(daughterBoard: Int, testBoard: Int): Option[TestingOrder] = {
     var result: List[TestingOrder] = Nil
     val statement = connection.prepareStatement(
@@ -735,12 +777,24 @@ class Database(filename: String) {
     result.headOption
   }
 
+  /**
+   *  取得某個測試單目前的仍存活的良品數
+   *
+   *  @param    testingID     測試單號
+   *  @return                 還活著的電容良品數
+   */
   def getGoodCount(testingID: Long): Int = {
     val goodCapacity = getGoodCapacity(testingID)
     val damagedCapacity = getDamagedCapacity(testingID)
     (goodCapacity -- damagedCapacity).size
   }
 
+  /**
+   *  取得特定日期裡，有執行測試的測試單列表
+   *
+   *  @param      dateString      以 yyyy-MM-dd 格式表示的日期
+   *  @return                     測試單號
+   */
   def getTestingForDate(dateString: String): List[TestingOrder] = {
     var result: List[TestingOrder] = Nil
     val statement = connection.prepareStatement(
@@ -775,10 +829,18 @@ class Database(filename: String) {
     result
   }
 
+  /**
+   *  取得某測試單裡的某顆電容的所有的測試結果
+   *
+   *  @param    testingID       測試單號
+   *  @param    capacityID      電容編號
+   *  @return                   testingID 測試單的 capacityID 電容的所有測試數值
+   */
   def getAllTestingResult(testingID: Long, capacityID: Int): List[TestingResult] = {
     var result: List[TestingResult] = Nil
     val statement = connection.prepareStatement(
-      "SELECT * FROM RoomTemperatureTestingResult where testingID=? AND capacityID=? UNION SELECT * FROM OvenTestingResult where testingID=? AND capacityID=? ORDER BY timestamp DESC"
+      "SELECT * FROM RoomTemperatureTestingResult where testingID=? AND capacityID=? " +
+      "UNION SELECT * FROM OvenTestingResult where testingID=? AND capacityID=? ORDER BY timestamp DESC"
     )
 
     statement.setLong(1, testingID)
@@ -806,10 +868,18 @@ class Database(filename: String) {
     result
   }
 
+  /**
+   *  取得某測試單裡的某顆電容的最新一筆測試結果
+   *
+   *  @param    testingID       測試單號
+   *  @param    capacityID      電容編號
+   *  @return                   testingID 測試單的 capacityID 電容的最新一筆測試結果
+   */
   def getTestingResult(testingID: Long, capacityID: Int): Option[TestingResult] = {
     var result: Option[TestingResult] = None
     val statement = connection.prepareStatement(
-      "SELECT * FROM RoomTemperatureTestingResult where testingID=? AND capacityID=? UNION SELECT * FROM OvenTestingResult where testingID=? AND capacityID=? ORDER BY timestamp DESC"
+      "SELECT * FROM RoomTemperatureTestingResult where testingID=? AND capacityID=? " +
+      "UNION SELECT * FROM OvenTestingResult where testingID=? AND capacityID=? ORDER BY timestamp DESC"
     )
 
     statement.setLong(1, testingID)
@@ -839,6 +909,11 @@ class Database(filename: String) {
     result
   }
 
+  /**
+   *  將測試單標示為中斷
+   *  
+   *  @param    testingID       測試單號
+   */
   def abortTest(testingID: Long) {
     val statement = connection.prepareStatement(
       "UPDATE TestingOrder SET currentStatus=6 WHERE id=?"
@@ -847,6 +922,12 @@ class Database(filename: String) {
     statement.executeUpdate()
   }
 
+  /**
+   *  取得某個子板的電壓設定
+   *
+   *  @param    daughterBoard     子板編號
+   *  @return                     若該子板沒有正在測試的測試單則為 None，否則為 true
+   */
   def getVoltageSetting(daughterBoard: Int): Option[Double] = {
     var result: Option[Double] = None
     val statement = connection.prepareStatement(
@@ -865,10 +946,28 @@ class Database(filename: String) {
     result
   }
 
-  def insertNewTestingOrder(partNo: String, capacity: Double, voltage: Double, leakCurrent: String, dxValue: Double, marginOfError: String, testingTime: Int, testingInterval: Int, daughterBoard: Int, testingBoard: Int) = {
+  /**
+   *  新增測試單
+   *
+   *  @param      partNo          料號
+   *  @param      capacity        電容標示的電容值
+   *  @param      voltage         測試時要使用的電壓值
+   *  @param      leakCurrent     設定的漏電流
+   *  @param      dxValue         設定的損失角
+   *  @param      marginOfError   設定的誤差值
+   *  @param      testingTest     設定的測試總時間
+   *  @param      daughterBoard   子板編號
+   *  @param      testingBoard    烤箱板編號
+   */
+  def insertNewTestingOrder(partNo: String, capacity: Double, voltage: Double, 
+                            leakCurrent: String, dxValue: Double, marginOfError: String, 
+                            testingTime: Int, testingInterval: Int, daughterBoard: Int, 
+                            testingBoard: Int) = {
+
     val statement = connection.prepareStatement(
       "INSERT INTO TestingOrder VALUES(NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, 0, 0)"
     )
+
     statement.setString(1, partNo)
     statement.setDouble(2, capacity)
     statement.setDouble(3, voltage)
@@ -883,7 +982,13 @@ class Database(filename: String) {
     getTestingOrderByBlock(daughterBoard, testingBoard)
   }
 
-  def getTestingOrderByPartNo(partNo: String) = {
+  /**
+   *  取得料號中有特定字串的測試單號
+   *
+   *  @param      partNo      料號
+   *  @return                 料號中具有 `partNo` 字樣的測試單列表
+   */
+  def getTestingOrderByPartNo(partNo: String): List[TestingOrder] = {
     var result: List[TestingOrder] = Nil
     val statement = connection.prepareStatement(
       "SELECT * FROM TestingOrder where partNo LIKE ? ORDER BY id DESC"

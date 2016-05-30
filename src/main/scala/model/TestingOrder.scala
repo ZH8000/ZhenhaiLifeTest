@@ -49,6 +49,11 @@ case class TestingOrder(
   val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
   val timeFormatter = new SimpleDateFormat("HH:mm:ss")
 
+  /**
+   *  以「時時:分分:秒秒」來表示的測試絡時間
+   *
+   *  @param      seconds       總共執行了幾秒
+   */
   def formatDuration(seconds: Long) = {
     val hour = seconds / 3600
     val remain = seconds % 3600
@@ -58,6 +63,9 @@ case class TestingOrder(
     "%d:%02d:%02d".format(hour, minute, second)
   } 
 
+  /**
+   *  以 yyyy-MM-dd 格式表示的開始日期
+   */
   def formattedStartDate = {
 
     currentStatus match {
@@ -68,6 +76,9 @@ case class TestingOrder(
     }
   }
 
+  /**
+   *  以 HH:mm:ss 格式表示的開始日期
+   */
   def formattedStartTime = {
     currentStatus match {
       case 0 if !isRoomTemperatureTested => "尚未進行室溫測試"
@@ -77,6 +88,9 @@ case class TestingOrder(
     }
   }
 
+  /**
+   *  目前狀態編號的說明
+   */
   def statusDescription = {
     currentStatus match {
       case 0 if !isRoomTemperatureTested => "新加入"
@@ -91,7 +105,9 @@ case class TestingOrder(
     }
   }
 
-
+  /**
+   *  格式化過後的測試時間
+   */
   def duration = {
     currentStatus match {
       case 0 if !isRoomTemperatureTested  => "尚未執行室溫測試"
