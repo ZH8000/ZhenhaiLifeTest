@@ -23,6 +23,17 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     okButtonLayoutData.grabExcessVerticalSpace = true
     okButton.setLayoutData(okButtonLayoutData)
     okButton.setText("套用")
+    okButton.addSelectionListener(new SelectionAdapter() {
+      override def widgetSelected(e: SelectionEvent) {
+        val dialog = new RS232ProbeDialog("主板", mainWindowShell)
+        dialog.open()
+        val dialog2 = new RS232ProbeDialog("LCR 容量計", mainWindowShell)
+        dialog2.open()
+        val dialog3 = new RS232ProbeDialog("LC 漏電流測試儀", mainWindowShell)
+        dialog3.open()
+
+      }
+    })
 
     val cancelButton = new Button(composite, SWT.PUSH)
     val cancelButtonLayoutData = new GridData
@@ -34,7 +45,7 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     cancelButton.setText("取消")
     cancelButton.addSelectionListener(new SelectionAdapter() {
       override def widgetSelected(e: SelectionEvent) {
-        MainWindow.appendLog("按下「確定」按鈕")
+        MainWindow.appendLog("按下「取消」按鈕")
         MainWindow.popComposite()
       }
     })
@@ -42,17 +53,13 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     composite
   }
 
-  def init() = {
+  val gridLayout = MainGridLayout.createLayout(1)
+  val navigationButtons = createNavigationButtons()
+  val group = createMainGroup()
+  val rs232Group = createRS232Group()
+  val buttonRow = createButtonRow()
 
-    val gridLayout = new GridLayout(1, true)
-
-    gridLayout.horizontalSpacing = 20
-    gridLayout.verticalSpacing = 20
-    // gridLayout.marginWidth = 200
-    // gridLayout.marginHeight = 200
-
-    this.setLayout(gridLayout)
-
+  def createNavigationButtons() = {
     val navigationButtons = new NavigationButtons(this)
     val navigationButtonsLayoutData = new GridData
     navigationButtonsLayoutData.heightHint = 50
@@ -61,54 +68,51 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     navigationButtonsLayoutData.horizontalSpan = 2
     navigationButtonsLayoutData.grabExcessHorizontalSpace = true
     navigationButtons.setLayoutData(navigationButtonsLayoutData)
+    navigationButtons
+  }
 
+  def createMainGroup() = {
     val group = new Group(this, SWT.SHADOW_ETCHED_IN)
-    val groupLayoutData = new GridData(GridData.FILL, GridData.FILL, true, true)
+    val groupLayoutData = new GridData(GridData.FILL, GridData.FILL, true, false)
     group.setLayoutData(groupLayoutData)
     group.setLayout(new GridLayout(2, true))
     group.setText("基本設定")
+    group
+  }
 
-    val powerGroup = new Group(this, SWT.SHADOW_ETCHED_IN)
-    val powerGroupLayoutData = new GridData(GridData.FILL, GridData.FILL, true, true)
-    powerGroup.setLayoutData(powerGroupLayoutData)
-    powerGroup.setLayout(new GridLayout(1, true))
-    powerGroup.setText("電源供應器")
+  def createRS232Group() = {
+    val rs232Group = new Group(this, SWT.SHADOW_ETCHED_IN)
+    val rs232GroupLayoutData = new GridData(GridData.FILL, GridData.FILL, true, false)
+    val detectButton = new Button(rs232Group, SWT.PUSH)
+    rs232Group.setLayoutData(rs232GroupLayoutData)
+    rs232Group.setLayout(new GridLayout(1, true))
+    rs232Group.setText("儀器 RS232 設定")
 
-    def createLayoutData = {
-      val gridData = new GridData
-      gridData.horizontalAlignment = GridData.FILL
-      gridData.grabExcessHorizontalSpace = true
-      gridData
-    }
+    detectButton.setText("偵測")
+    detectButton.setLayoutData(new GridData(SWT.END, GridData.FILL, true, true))
 
-    println("===> Serial:" + SerialPortList.getPortNames.toList)
+    rs232Group
+  }
 
-    val daughterBoardCount = new DropdownField("子板數目：", List(1, 2, 3, 4, 5, 6, 7), group)
-    val capacityCount = new DropdownField("子板上最大電容數：", (1 to 10).toList, group)
-    val mainBoardTTY = new DropdownField("主板序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), group)
-    val lcrMeterTTY = new DropdownField("容量計序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), group)
-    val lcMeterTTY = new DropdownField("漏電流儀序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), group)
-    val powerSuppliesTTY = Array(
-      new DropdownField("電源供應器 1 序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), powerGroup),
-      new DropdownField("電源供應器 2 序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), powerGroup),
-      new DropdownField("電源供應器 3 序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), powerGroup),
-      new DropdownField("電源供應器 4 序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), powerGroup),
-      new DropdownField("電源供應器 5 序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), powerGroup),
-      new DropdownField("電源供應器 6 序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), powerGroup),
-      new DropdownField("電源供應器 7 序列埠：", List("/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"), powerGroup)
-    )
+  def createButtonRow() = {
     val buttonGroup = createButtonGroup()
-    val buttonGroupLayoutData = new GridData(SWT.END, SWT.FILL, true, true)
+    val buttonGroupLayoutData = new GridData(SWT.END, SWT.FILL, true, false)
     buttonGroup.setLayoutData(buttonGroupLayoutData)
     buttonGroupLayoutData.heightHint = 50
     buttonGroupLayoutData.widthHint = 300
+    buttonGroup
+  }
 
-    daughterBoardCount.setLayoutData(createLayoutData)
-    capacityCount.setLayoutData(createLayoutData)
-    mainBoardTTY.setLayoutData(createLayoutData)
-    lcrMeterTTY.setLayoutData(createLayoutData)
-    lcMeterTTY.setLayoutData(createLayoutData)
-    powerSuppliesTTY.foreach(_.setLayoutData(createLayoutData))
+
+  def init() = {
+
+    this.setLayout(gridLayout)
+
+    val daughterBoardCount = new DropdownField("子板數目：", List(1, 2, 3, 4, 5, 6, 7), group)
+    val capacityCount = new DropdownField("子板上最大電容數：", (1 to 10).toList, group)
+
+    daughterBoardCount.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false))
+    capacityCount.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false))
 
   }
 
