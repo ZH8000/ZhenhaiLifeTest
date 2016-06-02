@@ -8,6 +8,7 @@ import org.eclipse.swt.graphics.Font
 import org.eclipse.swt.layout._
 import org.eclipse.swt.widgets._
 import zhenhai.lifetest.controller.model._
+import java.io.File
 
 /**
  *  USB 轉 RS232 偵測對話視窗
@@ -16,9 +17,11 @@ import zhenhai.lifetest.controller.model._
  */
 class RS232ProbeDialog(title: String, parent: Shell) extends Dialog(parent, SWT.APPLICATION_MODAL) {
 
+  var result: Option[File] = None
   var hasMessageBox: Boolean = false
   val shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL)
   val label = new Label(shell, SWT.NONE)
+  val prober = new RS232Prober()
 
   /**
    *  顯示彈出式視窗
@@ -36,20 +39,25 @@ class RS232ProbeDialog(title: String, parent: Shell) extends Dialog(parent, SWT.
     responseCode
   }
 
+  /**
+   *  偵測 RS232 的連接埠，當偵測到時，則把視窗關掉，並返回取得的路徑
+   */
   def detectPort() {
     
     val returnCode = showMessageBox(s"請先移除 $title 的 RS232 轉 USB 連接線", SWT.OK|SWT.CANCEL)
 
     if (returnCode == SWT.OK) {
       label.setText(s"請將 $title 的 RS232 轉 USB 連接線連上")
-      val prober = new RS232Prober()
       prober.startProbe(300) { e =>
         println(e)
-        shell.getDisplay.asyncExec(new Runnable() {
-          override def run() {
-            shell.dispose()
-          }
-        })
+        result = e
+        if (!shell.isDisposed) {
+          shell.getDisplay.asyncExec(new Runnable() {
+            override def run() {
+              shell.dispose()
+            }
+          })
+        }
       }
     } else {
       shell.dispose()
@@ -60,7 +68,7 @@ class RS232ProbeDialog(title: String, parent: Shell) extends Dialog(parent, SWT.
   /**
    *  開啟視窗
    */
-  def open() = {
+  def open(): Option[File] = {
     val parent = getParent()
     val layout = new FillLayout
     layout.marginWidth = 30
@@ -72,7 +80,8 @@ class RS232ProbeDialog(title: String, parent: Shell) extends Dialog(parent, SWT.
     shell.open()
     shell.addShellListener(new ShellAdapter() {
       override def shellClosed(e: ShellEvent) {
-        e.doit = false
+        prober.abort()
+        super.shellClosed(e)
       }
     })
 
@@ -84,6 +93,8 @@ class RS232ProbeDialog(title: String, parent: Shell) extends Dialog(parent, SWT.
         display.sleep()
       }
     }
+
+    result
   }
   
 }

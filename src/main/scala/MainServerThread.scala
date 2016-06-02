@@ -27,24 +27,17 @@ class MainServerThread extends Thread {
   // val power1Port = "/dev/serial/by-path/pci-0000:00:10.0-usb-0:2:1.0-port0"
   // val lcrMeterPort   = "/dev/serial/by-path/pci-0000:00:10.0-usb-0:1:1.0-port0"
 
-  // ASUS PC
-  //val mainBoardPort = "/dev/serial/by-path/pci-0000:00:1a.0-usb-0:1.1:1.0-port0"
-  //val power1Port    = "/dev/serial/by-path/pci-0000:00:1a.0-usb-0:1.2:1.0-port0"
-  //val lcrMeterPort  = "/dev/serial/by-path/pci-0000:00:1a.0-usb-0:1.3:1.0-port0"
-  //val lcMeterPort   = "/dev/serial/by-path/pci-0000:00:1a.0-usb-0:1.4:1.0-port0"
-
   // Toshiba Z30
-  val mainBoardPort = "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.7:1.0-port0"
-  val power1Port    = "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.5:1.0-port0"
-  val lcrMeterPort  = "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.2:1.0-port0"
-  val lcMeterPort   = "/dev/serial/by-path/pci-0000:00:14.0-usb-0:1.4:1.0-port0"
+  val mainBoardPort = LifeTestOptions.getMainBoardRS232Port.get
+  val lcrMeterPort  = LifeTestOptions.getLCRRS232Port.get
+  val lcMeterPort   = LifeTestOptions.getLCRS232Port.get
 
-  val powerSuppliesPort: Map[Int, String] = Map(0 -> power1Port)
+  var powerSuppliesPort: Map[Int, String] = getPowerSupplyPorts
 
-  val daughterBoardCount = 3    // 總共有幾組測試子板
-  val capaciyCount = 3          // 一組的電容有幾顆
-  val rtDaughterBoard = 0       // 室溫測試板的子板編號
-  val rtTestingBoard = 0        // 室溫測試板的烤箱板編號
+  val daughterBoardCount = LifeTestOptions.getMaxDaughterBoardCount       // 總共有幾組測試子板
+  val capaciyCount = LifeTestOptions.getMaxCapacityCount                  // 一組的電容有幾顆
+  val rtDaughterBoard = LifeTestOptions.getRoomTemperatureDaughterBoard   // 室溫測試板的子板編號
+  val rtTestingBoard = LifeTestOptions.getRoomTemperatureTestingBoard     // 室溫測試板的烤箱板編號
 
   val db = LifeTestOptions.db
 
@@ -53,6 +46,16 @@ class MainServerThread extends Thread {
   val lcMeter = new RSTLCChecker(lcMeterPort)
   val powerSupplies: Map[Int, PowerSupplyInterface] = initPowerSupplyRS232()
   var powerSuppliesStatus: Map[Int, PowerSupplyStatus] = Map.empty
+
+  def getPowerSupplyPorts() = {
+    var powerSuppliesPort: Map[Int, String] = Map.empty
+    LifeTestOptions.getPower1RS232Port.foreach{ port => powerSuppliesPort += (0 -> port) }
+    LifeTestOptions.getPower2RS232Port.foreach{ port => powerSuppliesPort += (1 -> port) }
+    LifeTestOptions.getPower3RS232Port.foreach{ port => powerSuppliesPort += (2 -> port) }
+    LifeTestOptions.getPower4RS232Port.foreach{ port => powerSuppliesPort += (3 -> port) }
+    LifeTestOptions.getPower5RS232Port.foreach{ port => powerSuppliesPort += (4 -> port) }
+    powerSuppliesPort
+  }
 
   /**
    *  初始化各子板的電源供應器 RS232 介面

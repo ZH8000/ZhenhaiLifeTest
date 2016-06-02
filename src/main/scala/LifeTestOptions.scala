@@ -8,6 +8,7 @@ import org.eclipse.swt.widgets.{List => SWTList, _}
 import org.eclipse.swt.layout._
 import org.eclipse.swt.events._
 import java.util.concurrent._
+import java.util.prefs.Preferences
 import scala.util.Try
 
 /**
@@ -16,6 +17,76 @@ import scala.util.Try
 object LifeTestOptions {
 
   Class.forName("org.sqlite.JDBC")
+
+  val prefsNodeName = "/zhenhai/lifetest/prefs"
+  val prefs = Preferences.userRoot().node(prefsNodeName)
+
+  def setMainBoardRS232Port(port: String) {
+    prefs.put("mainBoardRS232", port)
+  }
+
+  def setLCRRS232Port(port: String) {
+    prefs.put("lcrRS232", port)
+  }
+
+  def setLCRS232Port(port: String) {
+    prefs.put("lcRS232", port)
+  }
+
+  def setPower1RS232Port(port: String) {
+    prefs.put("power1RS232", port)
+  }
+
+  def setPower2RS232Port(port: String) {
+    prefs.put("power2RS232", port)
+  }
+
+  def setPower3RS232Port(port: String) {
+    prefs.put("power3RS232", port)
+  }
+
+  def setPower4RS232Port(port: String) {
+    prefs.put("power4RS232", port)
+  }
+
+  def setPower5RS232Port(port: String) {
+    prefs.put("power5RS232", port)
+  }
+
+  def setMaxCapacityCount(count: Int) {
+    prefs.putInt("maxCapacityCount", count)
+  }
+
+  def setMaxDaughterBoardCount(count: Int) {
+    prefs.putInt("maxDaughterBoardCount", count)
+  }
+
+  def setRoomTemperatureDaughterBoard(count: Int) {
+    prefs.putInt("roomTemperatureDaughterBoard", count)
+  }
+
+  def setRoomTemperatureTestingBoard(count: Int) {
+    prefs.putInt("roomTemperatureTestingBoard", count)
+  }
+
+  def save() {
+    prefs.flush()
+  }
+
+  def getRoomTemperatureDaughterBoard: Int = prefs.getInt("roomTemperatureDaughterBoard", 0)
+  def getRoomTemperatureTestingBoard: Int = prefs.getInt("roomTemperatureTestingBoard", 0)
+
+  def getMaxCapacityCount: Int = prefs.getInt("maxCapacityCount", 3)
+  def getMaxDaughterBoardCount: Int = prefs.getInt("maxDaughterBoardCount", 1)
+  def getMainBoardRS232Port: Option[String] = Option(prefs.get("mainBoardRS232", null))
+  def getLCRRS232Port: Option[String] = Option(prefs.get("lcrRS232", null))
+  def getLCRS232Port: Option[String] = Option(prefs.get("lcRS232", null))
+  def getPower1RS232Port: Option[String] = Option(prefs.get("power1RS232", null))
+  def getPower2RS232Port: Option[String] = Option(prefs.get("power2RS232", null))
+  def getPower3RS232Port: Option[String] = Option(prefs.get("power3RS232", null))
+  def getPower4RS232Port: Option[String] = Option(prefs.get("power4RS232", null))
+  def getPower5RS232Port: Option[String] = Option(prefs.get("power5RS232", null))
+
 
   /**
    *  SQLite 資料庫存放的網址

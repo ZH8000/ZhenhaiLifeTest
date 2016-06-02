@@ -4,6 +4,9 @@ import jssc.SerialPort
 import jssc.SerialPortEvent
 import jssc.SerialPortEventListener
 import scala.util.Try
+import scala.util.Failure
+import java.util.Date
+import java.text.SimpleDateFormat
 
 /**
  *  RST 的 LCR Meter 的 RS232 介面
@@ -112,35 +115,61 @@ class LCRMeter(port: String, baudRate: Int = SerialPort.BAUDRATE_9600, waitForRe
   }
 
   /**
+   *  重試某個 block 裡的動作
+   *
+   *  @param    maxTries        最多試幾次
+   *  @param    interval        每次重試時要間隔幾秒
+   */
+  def retry[T](maxTries: Int, interval: Int = 60)(block: => Try[T]): Try[T] = {
+    val dateTimeFormatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss")
+    var result: Try[T] = Failure(new Exception("Power supply no response at all"))
+    var count = 0
+
+    while (result.isFailure && count < maxTries) {
+      if (count > 0) {
+        println(s"[${dateTimeFormatter.format(new Date)}] LCR Retry ${count}")
+        Thread.sleep(interval * 1000 * count)
+        this.close()
+        this.open()
+      }
+      result = block
+      count += 1
+    }
+    result
+  }
+
+  /**
    *  開始測定並取得測定結果
    *
    *  @return       測定結果
    */
-  def startMeasure(): Try[LCRResult] = Try {
+  def startMeasure(): Try[LCRResult] = retry(10) {
+    Try {
 
-    dataResultHolder = None
-
-    sendCommand("T0")
-
-    // 透過 RS232 送過 Trigger
-    sendCommand("E")
-
-    // 叫 LC Cheker 送回測試結果
-    // ESC+D (^]D)
-    sendCommand(Character.toString(27) + "D")
-
-    var numberOfTries = 0
-    while ((dataResultHolder.isEmpty) && numberOfTries <= 10) {
-      numberOfTries += 1
-      Thread.sleep(waitForResponse)
-    }
-
-    if (numberOfTries > 10) {
-      throw LCRMeterRS232Timeout
-    } else {
-      val result = dataResultHolder.get
       dataResultHolder = None
-      result
+
+      sendCommand("T0")
+
+      // 透過 RS232 送過 Trigger
+      sendCommand("E")
+
+      // 叫 LC Cheker 送回測試結果
+      // ESC+D (^]D)
+      sendCommand(Character.toString(27) + "D")
+
+      var numberOfTries = 0
+      while ((dataResultHolder.isEmpty) && numberOfTries <= 10) {
+        numberOfTries += 1
+        Thread.sleep(waitForResponse)
+      }
+
+      if (numberOfTries > 10) {
+        throw LCRMeterRS232Timeout
+      } else {
+        val result = dataResultHolder.get
+        dataResultHolder = None
+        result
+      }
     }
   }
 

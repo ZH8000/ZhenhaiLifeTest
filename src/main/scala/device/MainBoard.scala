@@ -5,6 +5,8 @@ import jssc.SerialPortEvent
 import jssc.SerialPortEventListener
 import scala.util.Try
 import scala.util.Failure
+import java.text.SimpleDateFormat
+import java.util.Date
 
 /**
  *  主板的 RS232 介面
@@ -50,13 +52,14 @@ class MainBoard(port: String, baudRate: Int = SerialPort.BAUDRATE_9600, waitForR
    *  @param    interval        每次重試時要間隔幾秒
    */
   def retry[T](maxTries: Int, interval: Int = 60)(block: => Try[T]): Try[T] = {
+    val dateTimeFormatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss")
     var result: Try[T] = Failure(new Exception("No response at all"))
     var count = 0
 
     while (result.isFailure && count < maxTries) {
       if (count > 0) {
-        println(s"Retry ${count}")
-        Thread.sleep(interval * 1000)
+        println(s"[${dateTimeFormatter.format(new Date)}] MaidBoard Retry ${count}")
+        Thread.sleep(interval * 1000 * count)
         this.close()
         this.open()
       }

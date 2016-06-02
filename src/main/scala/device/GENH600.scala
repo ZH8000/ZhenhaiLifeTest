@@ -4,6 +4,9 @@ import jssc.SerialPort
 import jssc.SerialPortEvent
 import jssc.SerialPortEventListener
 import scala.util.Try
+import scala.util.Failure
+import java.text.SimpleDateFormat
+import java.util.Date
 
 /**
  *  電源供應器的界面定義
@@ -160,26 +163,27 @@ class GENH600(port: String, deviceAddress: Int = 0, baudRate: Int = SerialPort.B
    *  送出指令並取回結果，因為 GENH 的所有指令都一定會有回應（例如 OK），
    *  所以我們必須在送出指令後就開始等待 Queue 裡是否有回傳值。
    */
-  def sendCommand(command: String): Try[String] = Try {
+  def sendCommand(command: String, maxTries: Int = 10): Try[String] = retry(maxTries) {
+    Try {
 
-    var numberOfTries = 0
+      var numberOfTries = 0
 
-    responseMessage = None
-    serialPort.writeBytes(s"$command\r".getBytes)
-
-    while (responseMessage.isEmpty && numberOfTries <= 10) {
-      numberOfTries += 1
-      Thread.sleep(waitForResponse)
-    }
-
-    if (numberOfTries > 10) {
-      throw PowerSupplyRS232Timeout
-    } else {
-      val response = responseMessage.get
       responseMessage = None
-      response
-    }
+      serialPort.writeBytes(s"$command\r".getBytes)
 
+      while (responseMessage.isEmpty && numberOfTries <= 10) {
+        numberOfTries += 1
+        Thread.sleep(waitForResponse)
+      }
+
+      if (numberOfTries > 10) {
+        throw PowerSupplyRS232Timeout
+      } else {
+        val response = responseMessage.get
+        responseMessage = None
+        response
+      }
+    }
   }
 
   /**
@@ -188,6 +192,31 @@ class GENH600(port: String, deviceAddress: Int = 0, baudRate: Int = SerialPort.B
   def close() {
     serialPort.closePort()
   }
+
+  /**
+   *  重試某個 block 裡的動作
+   *
+   *  @param    maxTries        最多試幾次
+   *  @param    interval        每次重試時要間隔幾秒
+   */
+  def retry[T](maxTries: Int, interval: Int = 60)(block: => Try[T]): Try[T] = {
+    val dateTimeFormatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss")
+    var result: Try[T] = Failure(new Exception("Power supply no response at all"))
+    var count = 0
+
+    while (result.isFailure && count < maxTries) {
+      if (count > 0) {
+        println(s"[${dateTimeFormatter.format(new Date)}] PowerSupply Retry ${count}")
+        Thread.sleep(interval * 1000 * count)
+        this.close()
+        this.open()
+      }
+      result = block
+      count += 1
+    }
+    result
+  }
+
 
   /**
    *  開啟 RS232 連接埠
@@ -199,7 +228,7 @@ class GENH600(port: String, deviceAddress: Int = 0, baudRate: Int = SerialPort.B
 
     // Power Supply 有時會有 BUG，導致開機後的第一個 RS232 指令不會有回應，所以
     // 要送一個 dummy 的指令，讓 Power Supply 回復正常。
-    sendCommand("ADR %02d".format(deviceAddress))
+    sendCommand("ADR %02d".format(deviceAddress), 1)
 
     // 這個指令才真的會有來自 Power Supply 的回覆訊息
     sendCommand("ADR %02d".format(deviceAddress)).map(_ == "OK")
