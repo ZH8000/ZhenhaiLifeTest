@@ -8,43 +8,11 @@ import org.eclipse.swt.layout._
 import org.eclipse.swt.events._
 import scala.util.Try
 
-class RS232InterfaceSettingComposite(title: String, parent: Composite) extends Composite(parent, SWT.NONE) {
-  
-  val gridLayout = new GridLayout(3, false)
-  val label = new Label(this, SWT.NONE)
-  val textEntry = new Text(this, SWT.READ_ONLY)
-  val button = new Button(this, SWT.PUSH)
-
-  def getPort(): Option[String] = Option(textEntry.getText).map(_.trim).filterNot(_.isEmpty)
-
-  def setPort(port: String) {
-    textEntry.setText(port)
-  }
-
-  def init() {
-    this.setLayout(gridLayout)
-    label.setText(title + " RS232 連接埠：")
-    label.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true))
-    textEntry.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true))
-    textEntry.setEnabled(false)
-    button.setText("偵測")
-    button.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true))
-    button.addSelectionListener(new SelectionAdapter() {
-      override def widgetSelected(e: SelectionEvent) {
-        val dialog = new RS232ProbeDialog(title, getShell)
-        val portHolder = dialog.open()
-
-        portHolder.foreach { port => 
-          textEntry.setText(port.getAbsolutePath)
-        }
-      }
-    })
-
-  }
-
-  init()
-}
-
+/**
+ *  「儀器設定」的畫面
+ *
+ *  @param    mainWindowShell     主視窗
+ */
 class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, SWT.NONE) {
 
   val gridLayout = MainGridLayout.createLayout(1)
@@ -72,8 +40,14 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
   val powerSupply4 = createPowerSupply4()
   val powerSupply5 = createPowerSupply5()
 
+  // 下方「套用」的按鈕列
   val buttonRow = createButtonRow()
   
+  /**
+   *  建立「室溫專用測試插槽設定」的 GroupFrame
+   *
+   *  @return   「室溫專用測試插槽設定」的 GroupFrame
+   */
   def createRoomTempeartureGroup() = {
     val group = new Group(this, SWT.SHADOW_ETCHED_IN)
     val groupLayoutData = new GridData(GridData.FILL, GridData.FILL, true, false)
@@ -83,6 +57,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     group
   }
 
+  /**
+   *  建立「室溫專用插槽」子板編號的下拉式選單
+   *
+   *  @return     「室溫專用插槽」子板編號的下拉式選單
+   */
   def createRoomTemperatureDaughterBoard() = {
     val daughterBoard = new DropdownField("子板編號：", (0 to 6).toList, roomTemperatureGroup)
     daughterBoard.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false))
@@ -90,6 +69,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     daughterBoard
   }
 
+  /**
+   *  建立「室溫專用插槽」烤箱板編號的下拉式選單
+   *
+   *  @return     「室溫專用插槽」烤箱板編號的下拉式選單
+   */
   def createRoomTemperatureTestingBoard() = {
     val testingBoard = new DropdownField("測試板編號：", (0 to 1).toList, roomTemperatureGroup)
     testingBoard.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false))
@@ -97,7 +81,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     testingBoard
   }
 
-
+  /**
+   *  建立「套用」按鈕的按鈕列
+   *
+   *  @return     「套用」按鈕的按鈕列
+   */
   def createButtonGroup() = {
     
     val composite = new Composite(this, SWT.NONE)
@@ -134,6 +122,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     composite
   }
 
+  /**
+   *  建立導覽按鈕列
+   *
+   *  @return       建立導覽按鈕列
+   */
   def createNavigationButtons() = {
     val navigationButtons = new NavigationButtons(this)
     val navigationButtonsLayoutData = new GridData
@@ -146,6 +139,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     navigationButtons
   }
 
+  /**
+   *  建立「基本設定」的 Group Frame
+   *
+   *  @return         建立「基本設定」的 Group Frame
+   */
   def createMainGroup() = {
     val group = new Group(this, SWT.SHADOW_ETCHED_IN)
     val groupLayoutData = new GridData(GridData.FILL, GridData.FILL, true, false)
@@ -155,6 +153,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     group
   }
 
+  /**
+   *  建立主板 RS232 連接埠偵測介面
+   *
+   *  @return     建立主板 RS232 連接埠偵測介面
+   */
   def createMainBoardRS232() = {
     val mainBoardRS232 = new RS232InterfaceSettingComposite("主板", rs232Group)
     mainBoardRS232.setLayoutData(new GridData(SWT.FILL, GridData.FILL, true, false))
@@ -162,6 +165,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     mainBoardRS232
   }
 
+  /**
+   *  建立 LCR 容量計 RS232 連接埠偵測介面
+   *
+   *  @return     建立 LCR 容量計 RS232 連接埠偵測介面
+   */
   def createLCRRS232() = {
     val lcrRS232 = new RS232InterfaceSettingComposite("LCR 容量計", rs232Group)
     lcrRS232.setLayoutData(new GridData(SWT.FILL, GridData.FILL, true, false))
@@ -169,6 +177,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     lcrRS232
   }
 
+  /**
+   *  建立 LC 漏電流 RS232 連接埠偵測介面
+   *
+   *  @return     建立 LC 漏電流 RS232 連接埠偵測介面
+   */
   def createLCRS232() = {
     val lcRS232 = new RS232InterfaceSettingComposite("LC 漏電流測試儀", rs232Group)
     lcRS232.setLayoutData(new GridData(SWT.FILL, GridData.FILL, true, false))
@@ -176,6 +189,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     lcRS232
   }
 
+  /**
+   *  建立電源供應器 1 的 RS232 連接埠偵測介面
+   *
+   *  @return     建立電源供應器 1 的 RS232 連接埠偵測介面
+   */
   def createPowerSupply1() = {
     val power1Supply = new RS232InterfaceSettingComposite("電源供應器 1", rs232Group)
     power1Supply.setLayoutData(new GridData(SWT.FILL, GridData.FILL, true, false))
@@ -183,6 +201,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     power1Supply
   }
 
+  /**
+   *  建立電源供應器 2 的 RS232 連接埠偵測介面
+   *
+   *  @return     建立電源供應器 2 的 RS232 連接埠偵測介面
+   */
   def createPowerSupply2() = {
     val power2Supply = new RS232InterfaceSettingComposite("電源供應器 2", rs232Group)
     power2Supply.setLayoutData(new GridData(SWT.FILL, GridData.FILL, true, false))
@@ -190,6 +213,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     power2Supply
   }
 
+  /**
+   *  建立電源供應器 3 的 RS232 連接埠偵測介面
+   *
+   *  @return     建立電源供應器 3 的 RS232 連接埠偵測介面
+   */
   def createPowerSupply3() = {
     val power3Supply = new RS232InterfaceSettingComposite("電源供應器 3", rs232Group)
     power3Supply.setLayoutData(new GridData(SWT.FILL, GridData.FILL, true, false))
@@ -197,6 +225,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     power3Supply
   }
 
+  /**
+   *  建立電源供應器 4 的 RS232 連接埠偵測介面
+   *
+   *  @return     建立電源供應器 4 的 RS232 連接埠偵測介面
+   */
   def createPowerSupply4() = {
     val power4Supply = new RS232InterfaceSettingComposite("電源供應器 4", rs232Group)
     power4Supply.setLayoutData(new GridData(SWT.FILL, GridData.FILL, true, false))
@@ -204,6 +237,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     power4Supply
   }
 
+  /**
+   *  建立電源供應器 5 的 RS232 連接埠偵測介面
+   *
+   *  @return     建立電源供應器 5 的 RS232 連接埠偵測介面
+   */
   def createPowerSupply5() = {
     val power5Supply = new RS232InterfaceSettingComposite("電源供應器 5", rs232Group)
     power5Supply.setLayoutData(new GridData(SWT.FILL, GridData.FILL, true, false))
@@ -211,6 +249,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     power5Supply
   }
 
+  /**
+   *  建立「儀器 RS232 設定」的 Group Frame
+   *
+   *  @return         「儀器 RS232 設定」的 Group Frame
+   */
   def createRS232Group() = {
     val rs232Group = new Group(this, SWT.SHADOW_ETCHED_IN)
     val rs232GroupLayoutData = new GridData(GridData.FILL, GridData.FILL, true, false)
@@ -222,6 +265,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     rs232Group
   }
 
+  /**
+   *  建立下方「套用」的按鈕列
+   *  
+   *  @return     下方「套用」的按鈕列
+   */
   def createButtonRow() = {
     val buttonGroup = createButtonGroup()
     val buttonGroupLayoutData = new GridData(SWT.END, SWT.FILL, true, false)
@@ -231,6 +279,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     buttonGroup
   }
 
+  /**
+   *  建立「子板上最大電容數」的下拉式選單
+   *
+   *  @return       「子板上最大電容數」的下拉式選單
+   */
   def createMaxCapacityCount() = {
     val capacityCount = new DropdownField("子板上最大電容數：", (1 to 10).toList, group)
     capacityCount.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false))
@@ -238,6 +291,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     capacityCount
   }
 
+  /**
+   *  建立「子板數目」的下拉式選單
+   *
+   *  @return       「子板數目」的下拉式選單
+   */
   def createMaxDaughterBoardCount() = {
     val daughterBoardCount = new DropdownField("子板數目：", List(1, 2, 3, 4, 5, 6, 7), group)
     daughterBoardCount.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false))
@@ -245,12 +303,11 @@ class EditParameter(mainWindowShell: Shell) extends Composite(mainWindowShell, S
     daughterBoardCount
   }
 
-
+  /**
+   *  初始化與設定 Layout 方式
+   */
   def init() = {
-
     this.setLayout(gridLayout)
-
-
   }
 
   init()
