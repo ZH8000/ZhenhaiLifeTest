@@ -7,6 +7,8 @@ import org.eclipse.swt.layout._
 import org.eclipse.swt.events._
 import java.util.Date
 import java.text.SimpleDateFormat
+import java.io._
+import org.eclipse.swt.program.Program
 
 /**
  *  電容測試結果詳細圖表頁面
@@ -21,11 +23,55 @@ class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder,
 
   lazy val testingResult = LifeTestOptions.db.getAllTestingResult(orderInfo.id, capacityID).toArray
 
-  val gridLayout = MainGridLayout.createLayout(3)
+  val gridLayout = MainGridLayout.createLayout(4)
   val title = createTitleLabel()
   val capacityTitle = createCapacityTitle()
+  val exportButton = createExportButton()
   val navigationButtons = createNavigationButtons()
   val tabFolder = createTabFolder()
+
+  def saveToCSV(fileName: String) {
+    
+    val printWriter = new PrintWriter(new File(fileName))
+    val dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
+    val timeFormatter = new SimpleDateFormat("HH:mm:ss")
+
+    printWriter.println(s"No,BlockNo,CapacityID,Date,Time,Capacity,DX,LC")
+
+    testingResult.zipWithIndex.foreach { case (data, index) =>
+      val date = dateFormatter.format(data.timestamp)
+      val time = timeFormatter.format(data.timestamp)
+      printWriter.println(s"$index,$blockNo,${data.capacityID},$date,$time,${data.capacity},${data.dxValue},${data.leakCurrent}")
+    }
+
+    printWriter.close()
+    val messageBox = new MessageBox(mainWindowShell, SWT.OK)
+    messageBox.setText("已儲存")
+    messageBox.setMessage("已儲存")
+    messageBox.open()
+    Program.launch(fileName)
+
+  }
+
+  def createExportButton() = {
+    val button = new Button(this, SWT.PUSH)
+    val layoutData = new GridData(SWT.END, SWT.FILL, true, false)
+    layoutData.widthHint = 300
+    button.setLayoutData(layoutData)
+    button.setText("匯出 CSV 檔")
+    button.addSelectionListener(new SelectionAdapter() {
+      override def widgetSelected(e: SelectionEvent) {
+        val fileDialog = new FileDialog(mainWindowShell, SWT.SAVE)
+        fileDialog.setFilterExtensions(Array("*.csv"))
+        val fileNameHolder = Option(fileDialog.open())
+        fileNameHolder.foreach { fileName =>
+          saveToCSV(fileName)
+          println("存到：" + fileName)
+        }
+      }
+    })
+    button
+  }
 
   /**
    *  建立折線圖的 Composite
@@ -164,7 +210,7 @@ class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder,
     navigationButtonsLayoutData.heightHint = 50
     navigationButtonsLayoutData.widthHint = 300
     navigationButtonsLayoutData.horizontalAlignment = GridData.END
-    navigationButtonsLayoutData.grabExcessHorizontalSpace = true
+    navigationButtonsLayoutData.grabExcessHorizontalSpace = false
     navigationButtons.setLayoutData(navigationButtonsLayoutData)
     navigationButtons
   }
@@ -177,7 +223,7 @@ class OrderCapacityDetail(blockNo: Int, orderInfo: TestingOrder,
   def createTabFolder() = {
     val tabFolder = new TabFolder(this, SWT.NONE)
     val tabFolderLayoutData = new GridData(SWT.FILL, SWT.FILL, true, true)
-    tabFolderLayoutData.horizontalSpan = 3
+    tabFolderLayoutData.horizontalSpan = 4
     tabFolder.setLayoutData(tabFolderLayoutData)
     tabFolder
   }
